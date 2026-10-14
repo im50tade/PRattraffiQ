@@ -161,25 +161,68 @@ def bewerte_flaeche(
     return Bewertung(gesamtscore=round(gesamt, 1), teilscores=teilscores, formel=formel)
 
 
-# --------------------------------------------------------------------------- Ausschluss
+# --------------------------------------------------------------------------- Ausschluss und Prüfhinweise
 
-def pruefe_ausschluss(
+def pruefe_gebiete(
     ueberlappungen: Sequence[Mapping[str, Any]],
-    gebietstypen: Mapping[str, str],
-    mindestanteil: float = 0.0,
-) -> list[str]:
-    """Liefert die Ausschlussgründe (K.-o.) einer Fläche.
+    gebietstypen: Mapping[str, Mapping[str, Any]],
+) -> dict[str, list[str]]:
+    """Prüft Überlappungen mit Restriktionsgebieten und liefert Ausschlussgründe (K.-o.) und Prüfhinweise.
 
     ``ueberlappungen`` enthält je betroffenem Gebiet ``typ``, ``name`` und ``anteil``
-    (Anteil der Kandidatenfläche, der im Gebiet liegt, 0–1). Leere Liste = kein Ausschluss.
+    (Anteil der Kandidatenfläche im Gebiet, 0–1). Je Gebietstyp gilt:
+      * ``ko_ab_anteil``      – Ausschluss, sobald der Anteil diesen Wert erreicht (0 = jede Überlappung)
+      * ``hinweis_ab_anteil`` – sonst Prüfhinweis ab diesem Anteil; die Fläche bleibt im Ranking
+    Gebietstypen ohne Konfiguration werden ignoriert.
     """
-    gruende = []
+    ausschluss: list[str] = []
+    hinweise: list[str] = []
     for u in ueberlappungen:
-        if u["typ"] in gebietstypen and u["anteil"] > mindestanteil:
-            gruende.append(
-                f"Liegt zu {u['anteil'] * 100:.0f} % im {gebietstypen[u['typ']]} „{u['name']}“"
-            )
-    return gruende
+        regel = gebietstypen.get(u["typ"])
+        anteil = float(u["anteil"])
+        if regel is None or anteil <= 0:
+            continue
+        text = f"Liegt zu {anteil * 100:.0f} % im {regel['label']} „{u['name']}“"
+        ko = regel.get("ko_ab_anteil")
+        hinweis = regel.get("hinweis_ab_anteil")
+        if ko is not None and anteil >= ko:
+            ausschluss.append(text)
+        elif hinweis is not None and anteil >= hinweis:
+            schwelle = f" (Ausschluss erst ab {ko * 100:.0f} %)" if ko is not None else ""
+            hinweise.append(f"{text}{schwelle} – Stellplätze außerhalb des Gebiets anordnen")
+    return {"ausschluss": ausschluss, "hinweise": hinweise}
+
+
+# --------------------------------------------------------------------------- Nachfrage
+
+def korridor_potenzial(
+    herkunft: Sequence[Mapping[str, Any]],
+    korridorbreite_m: float,
+    min_lage_anteil: float = 0.0,
+    max_lage_anteil: float = 0.85,
+) -> tuple[float, list[dict]]:
+    """Abfangpotenzial einer Fläche aus den Pendlerströmen Herkunftsgemeinde → Zentrum.
+
+    Je Herkunft liegen vor: ``name``, ``einpendler``, ``abstand_m`` (senkrechter Abstand der
+    Fläche zur Luftlinie Gemeinde–Zentrum) und ``lage_anteil`` (Position der Fläche auf dieser
+    Linie: 0 = Gemeinde, 1 = Zentrum). Ein Strom zählt nur, wenn die Fläche auf dem Weg liegt
+    (``min_lage_anteil`` ≤ Lage ≤ ``max_lage_anteil``), und dann mit dem Faktor
+    max(0, 1 − Abstand / Korridorbreite). Potenzial = Σ Einpendler × Faktor.
+    """
+    if korridorbreite_m <= 0:
+        raise ValueError("Korridorbreite muss größer als 0 sein")
+    summe = 0.0
+    beitraege = []
+    for h in herkunft:
+        auf_dem_weg = min_lage_anteil <= h["lage_anteil"] <= max_lage_anteil
+        faktor = max(0.0, 1 - h["abstand_m"] / korridorbreite_m) if auf_dem_weg else 0.0
+        if faktor > 0:
+            beitrag = h["einpendler"] * faktor
+            summe += beitrag
+            beitraege.append({"name": h["name"], "einpendler": h["einpendler"], "abstand_m": round(h["abstand_m"]),
+                              "lage_anteil": round(h["lage_anteil"], 2), "faktor": round(faktor, 3), "beitrag": round(beitrag)})
+    beitraege.sort(key=lambda b: -b["beitrag"])
+    return summe, beitraege
 
 
 # --------------------------------------------------------------------------- Ranking
@@ -204,6 +247,7 @@ def erstelle_ranking(
             "gesamtscore": bew.gesamtscore,
             "teilscores": {k: t.score for k, t in bew.teilscores.items()},
             "ausschlussgruende": list(f.get("ausschlussgruende", [])),
+            "hinweise": list(f.get("hinweise", [])),
         }
         (ausgeschlossen if eintrag["ausschlussgruende"] else bewertet).append(eintrag)
     bewertet.sort(key=lambda e: (-e["gesamtscore"], e["id"]))

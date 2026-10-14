@@ -1,5 +1,8 @@
 """Integrationstests der API mit den Testdaten (Frankfurt am Main)."""
 
+import json
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -7,9 +10,16 @@ from app.main import app
 
 
 @pytest.fixture(scope="module")
-def client():
+def befragungsdatei(tmp_path_factory):
+    return tmp_path_factory.mktemp("ablage") / "befragungen.json"
+
+
+@pytest.fixture(scope="module")
+def client(befragungsdatei):
+    os.environ["PR_BEFRAGUNGEN"] = str(befragungsdatei)
     with TestClient(app) as c:
         yield c
+    del os.environ["PR_BEFRAGUNGEN"]
 
 
 def test_konfiguration(client):
@@ -20,7 +30,7 @@ def test_konfiguration(client):
 
 
 @pytest.mark.parametrize("name", ["flaechenkandidaten", "einfallachsen", "haltestellen", "radwege", "schutzgebiete",
-                                  "sharing_stationen", "stadtgebiet", "referenzorte", "gewaesser", "pr_bestand"])
+                                  "sharing_stationen", "stadtgebiet", "pendlerquellen", "referenzorte", "gewaesser", "pr_bestand"])
 def test_layer(client, name):
     r = client.get(f"/api/layer/{name}")
     assert r.status_code == 200
@@ -84,7 +94,7 @@ def test_monitoring(client):
     assert "standort_id" in client.get("/api/monitoring/export.csv").text
 
 
-def test_wirkung_und_befragung(client):
+def test_wirkung_und_befragung(client, befragungsdatei):
     w = client.get("/api/wirkung/P1").json()
     assert len(w["indikatoren"]) == 3
     assert all(i["vergleich"] for i in w["indikatoren"])
@@ -94,3 +104,16 @@ def test_wirkung_und_befragung(client):
     nachher = client.get("/api/monitoring/live").json()["standorte"][0]["kennzahlen"]["verlagerte_fahrten_tag"]["wert"]
     assert nachher == pytest.approx(vorher * 2, rel=0.05)
     assert client.put("/api/wirkung/P1/befragung", json={"verlagerungsanteil_prozent": 140}).status_code == 422
+    gespeichert = json.loads(befragungsdatei.read_text(encoding="utf-8"))
+    assert gespeichert == {"P1": {"verlagerungsanteil": 0.6, "stichprobe_n": 250, "erhebungszeitraum": "Mai 2026"}}
+    assert client.delete("/api/wirkung/P1/befragung").json()["verlagerungsanteil"] == pytest.approx(0.3)
+    assert json.loads(befragungsdatei.read_text(encoding="utf-8")) == {}
+
+
+def test_pruefhinweis_bleibt_im_ranking(client):
+    r = client.get("/api/ranking").json()
+    mit_hinweis = [e for e in r["ranking"] if e["hinweise"]]
+    assert [e["id"] for e in mit_hinweis] == ["T14"]
+    assert "Ausschluss erst ab 10 %" in mit_hinweis[0]["hinweise"][0]
+    s = client.get("/api/flaechen/T01/steckbrief").json()
+    assert s["herleitung"]["nachfragemodell"] == "korridor" and s["herleitung"]["pendlerstroeme"]

@@ -36,6 +36,13 @@ def kosten_je_verlagerter_fahrt(kosten_jahr_eur: float, erloese_jahr_eur: float,
     return (kosten_jahr_eur - erloese_jahr_eur) / fahrten_jahr
 
 
+def kosten_je_verlagerter_fahrt_brutto(kosten_jahr_eur: float, fahrten_jahr: float) -> float | None:
+    """Brutto-Kosten je verlagerter Fahrt = Gesamtkosten je Jahr / verlagerte Fahrten je Jahr (ohne Erlöse)."""
+    if fahrten_jahr <= 0:
+        return None
+    return kosten_jahr_eur / fahrten_jahr
+
+
 def fahrten_je_fahrzeug_tag(fahrten: float, fahrzeuge: int, tage: float = 1.0) -> float | None:
     """Fahrten je Fahrzeug und Tag = Fahrten / (Fahrzeuge × Tage)."""
     if fahrzeuge <= 0 or tage <= 0:

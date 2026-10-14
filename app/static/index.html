@@ -54,7 +54,8 @@
           <div class="legende" aria-label="Legende Gesamtscore">
             <span class="klein">Gesamtscore der Testflächen</span>
             <div class="legende-skala"><span>0</span><span class="skala-balken" aria-hidden="true"></span><span>100</span></div>
-            <span class="klein"><span class="legende-ausschluss" aria-hidden="true"></span> ausgeschlossen (K.-o.)</span>
+            <span class="klein"><span class="legende-ausschluss" aria-hidden="true"></span> ausgeschlossen (K.-o.)</span><br>
+            <span class="klein"><span class="legende-hinweis" aria-hidden="true"></span> mit Prüfhinweis (bleibt im Ranking)</span>
           </div>
         </aside>
 
@@ -207,7 +208,7 @@
       <div class="zwei-spalten">
         <section class="karte-block" aria-labelledby="befragung-titel">
           <h2 id="befragung-titel">Befragungsergebnis</h2>
-          <p class="klein">Der Verlagerungsanteil gibt an, welcher Anteil der P+R-Nutzer ohne den Standort mit dem Pkw ins Zentrum gefahren wäre. Der Wert speist sofort die Kennzahlen im Live-Monitoring.</p>
+          <p class="klein">Der Verlagerungsanteil gibt an, welcher Anteil der P+R-Nutzer ohne den Standort mit dem Pkw ins Zentrum gefahren wäre. Der Wert speist sofort die Kennzahlen im Live-Monitoring und wird gespeichert (nur der aggregierte Anteil, keine Einzelantworten).</p>
           <form id="befragung-form" class="formular">
             <label for="bf-anteil">Verlagerungsanteil in Prozent</label>
             <input id="bf-anteil" type="number" min="0" max="100" step="1" required inputmode="decimal">
@@ -215,7 +216,10 @@
             <input id="bf-n" type="number" min="1" step="1" inputmode="numeric">
             <label for="bf-zeitraum">Erhebungszeitraum</label>
             <input id="bf-zeitraum" type="text" maxlength="80" autocomplete="off">
-            <button type="submit" class="knopf">Befragungsergebnis übernehmen</button>
+            <div class="knopf-reihe">
+              <button type="submit" class="knopf">Befragungsergebnis übernehmen</button>
+              <button type="button" id="bf-zuruecksetzen" class="knopf knopf-zweit">Auf Standardannahme zurücksetzen</button>
+            </div>
             <p id="bf-status" class="klein" role="status"></p>
           </form>
         </section>

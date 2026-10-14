@@ -107,6 +107,22 @@ def main() -> None:
     ]
     schreibe("referenzorte.geojson", sammlung([feature(Point(lon, lat), id=i, name=n, art=a) for i, n, lon, lat, a in orte]))
 
+    # ------------------------------------------------------------ Pendlerherkunft (Lage genähert, Einpendlerzahlen synthetisch)
+    herkunft = [
+        ("G01", "Bad Homburg v. d. Höhe", 8.618, 50.227, 9000), ("G02", "Oberursel (Taunus)", 8.577, 50.204, 7000),
+        ("G03", "Friedberg (Hessen)", 8.755, 50.335, 6000), ("G04", "Usingen", 8.537, 50.335, 3000),
+        ("G05", "Bad Vilbel", 8.736, 50.179, 6500), ("G06", "Maintal", 8.840, 50.150, 5000),
+        ("G07", "Hanau", 8.917, 50.133, 9000), ("G08", "Gelnhausen", 9.190, 50.202, 3500),
+        ("G09", "Offenbach am Main", 8.766, 50.101, 14000), ("G10", "Neu-Isenburg", 8.696, 50.053, 6000),
+        ("G11", "Langen (Hessen)", 8.668, 49.990, 4500), ("G12", "Darmstadt", 8.650, 49.872, 9000),
+        ("G13", "Rüsselsheim am Main", 8.412, 49.990, 5000), ("G14", "Hofheim am Taunus", 8.447, 50.087, 5500),
+        ("G15", "Wiesbaden", 8.240, 50.082, 8000), ("G16", "Eschborn", 8.570, 50.143, 4000),
+        ("G17", "Kronberg im Taunus", 8.505, 50.180, 3000),
+    ]
+    schreibe("pendlerquellen.geojson", sammlung([
+        feature(Point(lon, lat), id=i, name=n, einpendler=e) for i, n, lon, lat, e in herkunft
+    ]))
+
     schreibe("gewaesser.geojson", sammlung([feature(LineString(MAIN), id="main", name="Main (vereinfachter Verlauf)")]))
 
     # ------------------------------------------------------------ Einfallachsen (Verlauf genähert, Mengen synthetisch)
@@ -170,7 +186,7 @@ def main() -> None:
         (8.8400, 50.1490, 120, 80, 0, "privat", 50, 30, 6200, 1),
         (8.8000, 50.1545, 100, 90, 0, "privat", 80, 5, 5000, 1),
         (8.8600, 50.1285, 120, 80, 0, "öffentlich", 0, 85, 6500, 1),
-        (8.7850, 50.1160, 100, 80, 10, "privat", 90, 5, 4300, 1),
+        (8.7850, 50.1161, 100, 80, 10, "privat", 90, 5, 4300, 1),
         (8.5750, 50.0965, 110, 90, 0, "öffentlich", 10, 80, 6800, 1),
         (8.5450, 50.1120, 100, 80, 0, "privat", 70, 10, 5500, 1),
         (8.7000, 50.1700, 120, 90, 0, "öffentlich", 20, 60, 6500, 1),

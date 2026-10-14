@@ -6,6 +6,7 @@ Dieser Dienst bereitet nur die aggregierten Zählwerte auf.
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from collections import OrderedDict
@@ -79,7 +80,8 @@ def _stunde_text(stunde: int) -> str:
 
 
 class MonitoringDienst:
-    def __init__(self, bestand: list[dict[str, Any]], sharing_stationen: list[dict[str, Any]], konfig: Mapping[str, Any], start: datetime | None = None):
+    def __init__(self, bestand: list[dict[str, Any]], sharing_stationen: list[dict[str, Any]], konfig: Mapping[str, Any], start: datetime | None = None,
+                 befragungen_datei: Path | None = None):
         self.konfig = konfig
         self.bestand = {b["id"]: b for b in bestand}
         self.flotten: dict[str, dict[str, int]] = {}
@@ -119,12 +121,9 @@ class MonitoringDienst:
         self._letzter_tick = time.monotonic()
         self.historie.hinzufuegen(self.quellen[self.aktive_quelle].lese(self.sim_zeit))
 
-        w = konfig["wirkung"]
-        self.befragung: dict[str, dict[str, Any]] = {
-            b["id"]: {"verlagerungsanteil": float(w["verlagerungsanteil"]), "stichprobe_n": None,
-                      "erhebungszeitraum": "", "quelle": "Standardannahme aus der Konfiguration"}
-            for b in bestand
-        }
+        self.befragungen_datei = befragungen_datei
+        self.befragung: dict[str, dict[str, Any]] = {b["id"]: self._standardannahme() for b in bestand}
+        self._lade_befragungen()
 
     # ------------------------------------------------------------------ Takt und Einstellungen
     @property
@@ -161,6 +160,37 @@ class MonitoringDienst:
                 self.pausiert = bool(pausiert)
             return self.status()
 
+    # ------------------------------------------------------------------ Befragungsergebnisse
+    def _standardannahme(self) -> dict[str, Any]:
+        return {"verlagerungsanteil": float(self.konfig["wirkung"]["verlagerungsanteil"]), "stichprobe_n": None,
+                "erhebungszeitraum": "", "quelle": "Standardannahme aus der Konfiguration"}
+
+    def _lade_befragungen(self) -> None:
+        """Übernimmt gespeicherte Befragungsergebnisse; unbekannte Standorte und ungültige Werte werden übergangen."""
+        if not self.befragungen_datei or not self.befragungen_datei.exists():
+            return
+        try:
+            gespeichert = json.loads(self.befragungen_datei.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
+        for sid, eintrag in gespeichert.items():
+            anteil = eintrag.get("verlagerungsanteil") if isinstance(eintrag, dict) else None
+            if sid in self.befragung and isinstance(anteil, (int, float)) and 0 <= anteil <= 1:
+                self.befragung[sid] = {
+                    "verlagerungsanteil": float(anteil), "stichprobe_n": eintrag.get("stichprobe_n"),
+                    "erhebungszeitraum": str(eintrag.get("erhebungszeitraum", "")), "quelle": "Befragung (gespeichert)",
+                }
+
+    def _speichere_befragungen(self) -> None:
+        if not self.befragungen_datei:
+            return
+        eingaben = {sid: {k: b[k] for k in ("verlagerungsanteil", "stichprobe_n", "erhebungszeitraum")}
+                    for sid, b in self.befragung.items() if b["quelle"].startswith("Befragung")}
+        self.befragungen_datei.parent.mkdir(parents=True, exist_ok=True)
+        temp = self.befragungen_datei.with_suffix(".tmp")
+        temp.write_text(json.dumps(eingaben, ensure_ascii=False, indent=2), encoding="utf-8")
+        temp.replace(self.befragungen_datei)
+
     def setze_befragung(self, standort_id: str, verlagerungsanteil: float, stichprobe_n: int | None, erhebungszeitraum: str) -> dict:
         if standort_id not in self.befragung:
             raise KeyError(f"Standort '{standort_id}' nicht gefunden")
@@ -171,6 +201,16 @@ class MonitoringDienst:
                 "verlagerungsanteil": verlagerungsanteil, "stichprobe_n": stichprobe_n,
                 "erhebungszeitraum": erhebungszeitraum.strip(), "quelle": "Befragung (Eingabe)",
             }
+            self._speichere_befragungen()
+            return self.befragung[standort_id]
+
+    def entferne_befragung(self, standort_id: str) -> dict:
+        """Setzt den Standort auf die Standardannahme aus der Konfiguration zurück."""
+        if standort_id not in self.befragung:
+            raise KeyError(f"Standort '{standort_id}' nicht gefunden")
+        with self.lock:
+            self.befragung[standort_id] = self._standardannahme()
+            self._speichere_befragungen()
             return self.befragung[standort_id]
 
     def status(self) -> dict:

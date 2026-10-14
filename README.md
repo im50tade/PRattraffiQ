@@ -105,11 +105,13 @@ Alles Fachliche steht in `config/einstellungen.yaml`:
 - `region` – aktive Region, Kartenausschnitt, Datenverzeichnis, **Gemeindeliste (AGS)** und **Kreisliste**.
   Die Region lässt sich auch per Umgebungsvariable wählen: `PR_REGION=rhein_main uvicorn app.main:app`.
 - `bewertung.raeumliche_parameter` – Einzugsradius, Zufahrtsdistanz, ÖV-Fußwegradius, Flächenbedarf je Stellplatz
+- `bewertung.nachfragemodell` – `korridor` (Pendlerströme Gemeinde → Zentrum, Standard) oder `achse`
+- `bewertung.ausschluss.gebietstypen` – je Gebietstyp K.-o.-Schwelle und Prüfhinweis-Schwelle
 - `bewertung.indikatoren` – Schwellenwerte (min/max, Invertierung, Kategorien) für die lineare Normierung
 - `bewertung.profile` – Gewichtungsprofile Ausgewogen, Klimaschutz, Kosten, Stadtverträglichkeit
 - `bewertung.sharing_regeln` – Bedingungen für Bike-Hub, E-Scooter-Zone, Carsharing, E-Lastenrad, Ladepunkte
 - `monitoring.wirtschaftlichkeit` – Abschreibungsdauer, Kapitalzins, Hochrechnungstage
-- `monitoring.wirkung` – Verlagerungsanteil, Emissionsfaktor
+- `monitoring.wirkung` – Verlagerungsanteil, Emissionsfaktor, Ablage der Befragungsergebnisse (`data/befragungen.json`, per `PR_BEFRAGUNGEN` änderbar)
 - `monitoring.aktualisierung`, `monitoring.simulator` – Intervall, Zeitraffer, Tagesgang- und Wetterparameter
 
 Eine alternative Datei kann mit `PR_KONFIG=/pfad/zur/datei.yaml` geladen werden.
@@ -137,7 +139,7 @@ jeweiligen Anbieter sind vor der Verwendung zu prüfen; manche Portale verlangen
 | Sharing-Stationen und -Nutzung | **GBFS-Feeds** der Anbieter (Bike-Sharing, E-Scooter, Carsharing), auffindbar z. B. über den GBFS-Katalog von MobilityData | `GbfsStationsQuelle` (Stationen/Flotten aus `station_information`, `vehicle_types`) und `GbfsQuelle` (Nutzung aus Änderungen in `station_status`) implementieren |
 | Verkehrsmengen an den Einfallachsen, Zählreihen für Vorher-Nachher | **Verkehrszählungen von Hessen Mobil** (Dauerzählstellen, Verkehrsmengenkarte), ergänzend städtische Zählstellen | DTV als Attribut `dtv_kfz` an `einfallachsen.geojson`; Tageswerte als CSV für `ZaehlstellenCsvQuelle` |
 | Schutzgebiete, Überschwemmungsgebiete | **Umweltdaten des HLNUG** (z. B. Natura-2000-/Naturschutzgebiete, festgesetzte Überschwemmungsgebiete) über WFS bzw. Downloads der hessischen Geoportale | Als `schutzgebiete.geojson` mit `typ` = `schutzgebiet` oder `ueberschwemmungsgebiet`; weitere Typen (z. B. Wasserschutzgebiete) unter `bewertung.ausschluss.gebietstypen` ergänzen |
-| Einpendler | Pendlerstatistik der Bundesagentur für Arbeit bzw. Regionalstatistik, Zuordnung über AGS | Auf die Achsen umlegen und als Attribut `einpendler` speichern (oder Einzugsbereichs-Logik in `services/flaechenfinder.py` erweitern) |
+| Einpendler | Pendlerstatistik der Bundesagentur für Arbeit bzw. Regionalstatistik, Zuordnung über AGS | Je Herkunftsgemeinde ein Punkt (Gemeindemittelpunkt) mit Attribut `einpendler` (Einpendler in die Kernstadt) als `pendlerquellen.geojson`; das Korridormodell nutzt sie direkt |
 | Flächen und Eigentum | Liegenschaftskataster (ALKIS) bzw. kommunales Liegenschaftsverzeichnis | Nur das Merkmal `öffentlich`/`privat` übernehmen – **keine Eigentümernamen** |
 | Belegung | Schranken, Schleifen oder Kamerazählung mit On-Edge-Auswertung | `SensorQuelle.lese()` implementieren (Format im Docstring) und in `config` `monitoring.datenquelle: sensor` setzen |
 | Erlöse | Export des Parkscheinautomaten bzw. Handyparken | `ParkautomatQuelle.lese()` implementieren (CSV-Format im Docstring) |
@@ -192,4 +194,15 @@ Formeln (auch im Dashboard unter „Herleitung“ sichtbar):
   `GbfsStationsQuelle` (Geodaten), `ZaehlstellenCsvQuelle` (Wirkung): Klassen mit dokumentierter
   Schnittstelle, werfen `NotImplementedError`.
 - Region `rhein_main`: in der Konfiguration angelegt, Datenverzeichnis noch leer.
-- Befragungsergebnisse werden nur im Arbeitsspeicher gehalten und gehen beim Neustart verloren.
+- Das Korridormodell nutzt Luftlinien; eine Umlegung auf das Straßennetz (z. B. mit OSM-Routing) ist nicht enthalten.
+
+## Getroffene Festlegungen
+
+| Frage | Festlegung | Begründung |
+|---|---|---|
+| Kosten je verlagerter Fahrt netto oder brutto? | **Beides**: netto (Kosten − Erlöse, Zuschussbedarf) als Hauptkennzahl, brutto als Zusatz | Netto zeigt die Belastung des Haushalts, brutto ist mit anderen Maßnahmen (z. B. ÖV-Angebot) vergleichbar und hängt nicht von der Gebührenpolitik ab |
+| Bezugsgröße der Break-even-Auslastung | **Tagesspitze**; ergänzt um die **kostendeckende Gebühr** je Parkvorgang | Die Spitze entscheidet über die Dimensionierung; die kostendeckende Gebühr beantwortet die praktisch relevantere Frage, wenn der Break-even über 100 % liegt |
+| Nachfragemodell | **Korridormodell** (Pendlerströme Herkunftsgemeinde → Zentrum, Fläche muss auf dem Weg liegen); Achsenmodell bleibt per Konfiguration wählbar | Zählt jeden Pendlerstrom nur einmal, bevorzugt nicht pauschal Flächen nahe dem Zentrum und skaliert über die Gemeindeliste auf Rhein-Main |
+| Ausschlussregeln | **Gestuft je Gebietstyp**: Schutzgebiete und Wasserschutzzone I/II bei jeder Überlappung K.-o.; Überschwemmungsgebiete K.-o. ab 10 % Flächenanteil, darunter Prüfhinweis; Wasserschutzzone III nur Prüfhinweis | Rechtlich harte Restriktionen bleiben streng; kleine Randüberlappungen lassen sich durch Anordnung der Stellplätze meiden, ohne die Fläche zu verlieren |
+| Gemeindeschlüssel | Geprüft und korrigiert: **Neu-Isenburg 06438009** (statt 06438008), **Hanau 06415000** (kreisfrei seit 2026, vorher 06435014); Hanau in der Rhein-Main-Region als eigene Gemeinde geführt, da nicht mehr über den Main-Kinzig-Kreis erfasst. Ein Test prüft Format und Doppelzählung | Vor produktiver Nutzung mit dem Gemeindeverzeichnis des Hessischen Statistischen Landesamts abgleichen |
+| Befragungsergebnisse | **Dauerhafte Ablage** als JSON-Datei, nur aggregierte Anteile (Anteil, Stichprobengröße, Zeitraum), zurücksetzbar | Überstehen Neustarts; keine Einzelantworten, damit keine personenbezogenen Daten |

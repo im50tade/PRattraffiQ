@@ -12,9 +12,10 @@ flaechenkandidaten  Polygon   id, name, eigentum (öffentlich|privat),
 einfallachsen       Linie     id, name, dtv_kfz, einpendler, zaehlstelle
 haltestellen        Punkt     id, name, art (z. B. S-Bahn), linien, takt_min
 radwege             Linie     id, name
-schutzgebiete       Polygon   id, name, typ (schutzgebiet|ueberschwemmungsgebiet)
+schutzgebiete       Polygon   id, name, typ (Schlüssel aus bewertung.ausschluss.gebietstypen)
 sharing_stationen   Punkt     id, name, bike, escooter, carsharing, lastenrad, pr_standort
 stadtgebiet         Polygon/Punkt  id, name, typ (stadtgebiet|zentrum)
+pendlerquellen      Punkt     id, name, einpendler (Einpendler ins Zentrum je Werktag; Korridormodell)
 referenzorte        Punkt     id, name, art (nur Orientierung in der Karte)
 gewaesser           Linie     id, name (nur Orientierung in der Karte)
 pr_bestand          Polygon   id, name, stellplaetze, gebuehr_je_parkvorgang_eur, investition_eur,
@@ -38,6 +39,7 @@ LAYER = (
     "schutzgebiete",
     "sharing_stationen",
     "stadtgebiet",
+    "pendlerquellen",
     "referenzorte",
     "gewaesser",
     "pr_bestand",

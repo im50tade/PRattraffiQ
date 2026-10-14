@@ -103,3 +103,14 @@ def break_even_auslastung(referenz_auslastung: float, deckungsgrad_wert: float) 
     if deckungsgrad_wert <= 0:
         return None
     return referenz_auslastung / deckungsgrad_wert
+
+
+def kostendeckende_gebuehr(kosten_jahr_eur: float, parkvorgaenge_jahr: float) -> float | None:
+    """Gebühr je Parkvorgang, bei der die Erlöse die Jahreskosten decken (bei gleicher Nachfrage).
+
+    Kostendeckende Gebühr = Gesamtkosten je Jahr / Parkvorgänge je Jahr. Ohne Parkvorgänge → ``None``.
+    Nachfragereaktionen auf eine höhere Gebühr sind nicht berücksichtigt.
+    """
+    if parkvorgaenge_jahr <= 0:
+        return None
+    return kosten_jahr_eur / parkvorgaenge_jahr

@@ -13,7 +13,7 @@ import json
 from typing import Any, Mapping
 
 import geopandas as gpd
-from shapely.geometry import mapping
+from shapely.geometry import LineString, mapping
 
 from ..adapters.geodaten import LAYER, GeodatenQuelle
 from ..domain import scoring as sc
@@ -39,6 +39,9 @@ class Flaechenfinder:
         sharing = m["sharing_stationen"]
         gebiete = m["schutzgebiete"]
         zentrum = m["stadtgebiet"][m["stadtgebiet"]["typ"] == "zentrum"].geometry.iloc[0]
+        modell = self.konfig["nachfragemodell"]
+        # Pendlerströme als Luftlinie Herkunftsgemeinde → Zentrum
+        stroeme = [(q["name"], float(q["einpendler"]), LineString([q.geometry, zentrum])) for _, q in m["pendlerquellen"].iterrows()]
 
         r_achse = self.raum["einzugsradius_achse_m"]
         r_zufahrt = self.raum["max_zufahrtsdistanz_m"]
@@ -54,7 +57,18 @@ class Flaechenfinder:
             d_achse = float(achs_dist[i_achse])
             achse = achsen.loc[i_achse]
             abnahme = max(0.0, 1 - d_achse / r_achse)
-            einpendler = float(achse["einpendler"]) * abnahme
+            mitte = geom.centroid
+            if modell["verfahren"] == "korridor":
+                herkunft = [
+                    {"name": n, "einpendler": e, "abstand_m": linie.distance(mitte), "lage_anteil": linie.project(mitte, normalized=True)}
+                    for n, e, linie in stroeme
+                ]
+                einpendler, beitraege = sc.korridor_potenzial(
+                    herkunft, modell["korridorbreite_m"], modell["min_lage_anteil"], modell["max_lage_anteil"])
+            elif modell["verfahren"] == "achse":
+                einpendler, beitraege = float(achse["einpendler"]) * abnahme, []
+            else:
+                raise ValueError(f"Unbekanntes Nachfragemodell '{modell['verfahren']}'")
             dtv = float(achse["dtv_kfz"]) if d_achse <= r_zufahrt else 0.0
 
             # ÖV: alle Haltestellen im Fußwegradius
@@ -71,9 +85,7 @@ class Flaechenfinder:
                 schnitt = geom.intersection(g.geometry).area
                 if schnitt > 0:
                     ueberlappungen.append({"typ": g["typ"], "name": g["name"], "anteil": round(schnitt / flaeche_m2, 3)})
-            gruende = sc.pruefe_ausschluss(
-                ueberlappungen, self.konfig["ausschluss"]["gebietstypen"], self.konfig["ausschluss"]["mindestueberlappung_anteil"]
-            )
+            pruefung = sc.pruefe_gebiete(ueberlappungen, self.konfig["ausschluss"]["gebietstypen"])
 
             stellplaetze = sc.stellplatzkapazitaet(
                 flaeche_m2, self.raum["nutzbarer_flaechenanteil"], self.raum["flaechenbedarf_je_stellplatz_m2"], int(k["geschosse"])
@@ -95,12 +107,15 @@ class Flaechenfinder:
                     "id": k["id"],
                     "name": k["name"],
                     "rohwerte": rohwerte,
-                    "ausschlussgruende": gruende,
+                    "ausschlussgruende": pruefung["ausschluss"],
+                    "hinweise": pruefung["hinweise"],
                     "ueberlappungen": ueberlappungen,
                     "stellplaetze": stellplaetze,
                     "geschosse": int(k["geschosse"]),
                     "distanz_zentrum_m": round(float(geom.centroid.distance(zentrum))),
                     "herleitung": {
+                        "nachfragemodell": modell["verfahren"],
+                        "pendlerstroeme": beitraege,
                         "achse": f"{achse['name']} ({achse['id']})",
                         "distanz_achse_m": round(d_achse),
                         "einpendler_achse": int(achse["einpendler"]),
@@ -154,6 +169,7 @@ class Flaechenfinder:
             "anzahl_bewertet": len(ranking["ranking"]),
             "ausgeschlossen": bool(f["ausschlussgruende"]),
             "ausschlussgruende": f["ausschlussgruende"],
+            "hinweise": f["hinweise"],
             "ueberlappungen": f["ueberlappungen"],
             "kennzahlen": {
                 "flaeche_m2": f["rohwerte"]["flaeche_m2"],
@@ -171,7 +187,7 @@ class Flaechenfinder:
             "bewertung": bewertung.als_dict(),
             "kostenbandbreite": sc.kostenbandbreite(f["stellplaetze"], invest, self.konfig["kostenbandbreite"]),
             "sharing_empfehlungen": sc.empfehle_sharing(kennwerte, self.konfig["sharing_regeln"]),
-            "parameter": self.raum,
+            "parameter": {**self.raum, "nachfragemodell": self.konfig["nachfragemodell"]},
         }
 
     # ------------------------------------------------------------------ Karte und Export
@@ -184,6 +200,7 @@ class Flaechenfinder:
             gdf["ausgeschlossen"] = [bool(self._nach_id[i]["ausschlussgruende"]) for i in gdf["id"]]
             gdf["ausschlussgruende"] = ["; ".join(self._nach_id[i]["ausschlussgruende"]) for i in gdf["id"]]
             gdf["stellplaetze"] = [self._nach_id[i]["stellplaetze"] for i in gdf["id"]]
+            gdf["hinweise"] = ["; ".join(self._nach_id[i]["hinweise"]) for i in gdf["id"]]
         return json.loads(gdf.to_json(drop_id=True))
 
     def _zeilen(self, gewichte: Mapping[str, float]) -> list[dict]:
@@ -200,6 +217,7 @@ class Flaechenfinder:
                 **{f"score_{k}": v for k, v in z["teilscores"].items()},
                 "stellplaetze": f["stellplaetze"], **f["rohwerte"],
                 "ausgeschlossen": bool(z["ausschlussgruende"]), "ausschlussgruende": "; ".join(z["ausschlussgruende"]),
+                "pruefhinweise": "; ".join(z["hinweise"]),
             }
             features.append({"type": "Feature", "properties": eigenschaften, "geometry": mapping(geo[z["id"]])})
         return {"type": "FeatureCollection", "features": features}
@@ -208,7 +226,7 @@ class Flaechenfinder:
         puffer = io.StringIO()
         indikatoren = list(self.konfig["indikatoren"])
         rohfelder = list(self.flaechen[0]["rohwerte"])
-        felder = ["rang", "id", "name", "gesamtscore", *[f"score_{k}" for k in indikatoren], "stellplaetze", *rohfelder, "ausgeschlossen", "ausschlussgruende"]
+        felder = ["rang", "id", "name", "gesamtscore", *[f"score_{k}" for k in indikatoren], "stellplaetze", *rohfelder, "ausgeschlossen", "ausschlussgruende", "pruefhinweise"]
         w = csv.DictWriter(puffer, fieldnames=felder, delimiter=";")
         w.writeheader()
         for z in self._zeilen(gewichte):
@@ -220,5 +238,6 @@ class Flaechenfinder:
                 "stellplaetze": f["stellplaetze"], **f["rohwerte"],
                 "ausgeschlossen": "ja" if z["ausschlussgruende"] else "nein",
                 "ausschlussgruende": "; ".join(z["ausschlussgruende"]),
+                "pruefhinweise": "; ".join(z["hinweise"]),
             })
         return puffer.getvalue()

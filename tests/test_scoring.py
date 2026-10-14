@@ -13,7 +13,7 @@ IND = KONFIG["indikatoren"]
 
 def rohwerte(**abweichungen):
     basis = {
-        "einpendler_einzugsbereich": 16000,
+        "einpendler_einzugsbereich": 13500,
         "dtv_zufahrt": 60000,
         "oev_abfahrten_je_stunde": 6,
         "distanz_radweg_m": 400,
@@ -126,18 +126,29 @@ class TestBewertung:
 class TestAusschlussUndRanking:
     TYPEN = KONFIG["ausschluss"]["gebietstypen"]
 
-    def test_ueberlappung_schliesst_aus(self):
-        gruende = sc.pruefe_ausschluss([{"typ": "schutzgebiet", "name": "NSG Wald", "anteil": 0.42}], self.TYPEN)
-        assert gruende == ["Liegt zu 42 % im Schutzgebiet „NSG Wald“"]
+    def test_schutzgebiet_jede_ueberlappung_ko(self):
+        erg = sc.pruefe_gebiete([{"typ": "schutzgebiet", "name": "NSG Wald", "anteil": 0.01}], self.TYPEN)
+        assert erg["ausschluss"] == ["Liegt zu 1 % im Schutzgebiet „NSG Wald“"]
+        assert erg["hinweise"] == []
 
     def test_keine_ueberlappung(self):
-        assert sc.pruefe_ausschluss([], self.TYPEN) == []
-        assert sc.pruefe_ausschluss([{"typ": "schutzgebiet", "name": "x", "anteil": 0.0}], self.TYPEN) == []
+        assert sc.pruefe_gebiete([], self.TYPEN) == {"ausschluss": [], "hinweise": []}
+        assert sc.pruefe_gebiete([{"typ": "schutzgebiet", "name": "x", "anteil": 0.0}], self.TYPEN)["ausschluss"] == []
 
-    def test_mindestanteil(self):
-        u = [{"typ": "ueberschwemmungsgebiet", "name": "HQ100", "anteil": 0.05}]
-        assert sc.pruefe_ausschluss(u, self.TYPEN, mindestanteil=0.10) == []
-        assert len(sc.pruefe_ausschluss(u, self.TYPEN, mindestanteil=0.0)) == 1
+    def test_ueberschwemmung_gestuft(self):
+        klein = sc.pruefe_gebiete([{"typ": "ueberschwemmungsgebiet", "name": "HQ100", "anteil": 0.06}], self.TYPEN)
+        assert klein["ausschluss"] == [] and "Ausschluss erst ab 10 %" in klein["hinweise"][0]
+        grenze = sc.pruefe_gebiete([{"typ": "ueberschwemmungsgebiet", "name": "HQ100", "anteil": 0.10}], self.TYPEN)
+        assert len(grenze["ausschluss"]) == 1 and grenze["hinweise"] == []
+
+    def test_wasserschutz_zonen(self):
+        erg = sc.pruefe_gebiete([
+            {"typ": "wasserschutzgebiet_zone_1_2", "name": "WSG A", "anteil": 0.2},
+            {"typ": "wasserschutzgebiet_zone_3", "name": "WSG B", "anteil": 0.9},
+            {"typ": "unbekannt", "name": "egal", "anteil": 1.0},
+        ], self.TYPEN)
+        assert len(erg["ausschluss"]) == 1 and "Zone I/II" in erg["ausschluss"][0]
+        assert len(erg["hinweise"]) == 1 and "Zone III" in erg["hinweise"][0]
 
     def test_ausgeschlossene_ohne_rang(self):
         flaechen = [
@@ -151,6 +162,24 @@ class TestAusschlussUndRanking:
         assert r["ausgeschlossen"][0]["id"] == "B"
         assert r["ausgeschlossen"][0]["rang"] is None
         assert r["ausgeschlossen"][0]["gesamtscore"] > 0
+
+
+class TestKorridor:
+    def test_nur_auf_dem_weg_und_linear_abnehmend(self):
+        herkunft = [
+            {"name": "A", "einpendler": 1000, "abstand_m": 0, "lage_anteil": 0.5},      # voll
+            {"name": "B", "einpendler": 1000, "abstand_m": 1500, "lage_anteil": 0.3},   # halber Faktor
+            {"name": "C", "einpendler": 1000, "abstand_m": 0, "lage_anteil": 0.95},     # zu nah am Zentrum
+            {"name": "D", "einpendler": 1000, "abstand_m": 3500, "lage_anteil": 0.5},   # außerhalb Korridor
+        ]
+        summe, beitraege = sc.korridor_potenzial(herkunft, 3000, 0.0, 0.85)
+        assert summe == pytest.approx(1500)
+        assert [b["name"] for b in beitraege] == ["A", "B"]
+        assert beitraege[1]["faktor"] == pytest.approx(0.5)
+
+    def test_ungueltige_breite(self):
+        with pytest.raises(ValueError):
+            sc.korridor_potenzial([], 0)
 
 
 class TestStellplaetzeKostenSharing:

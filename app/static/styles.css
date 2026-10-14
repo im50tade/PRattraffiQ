@@ -221,3 +221,10 @@ html.ohne-bewegung *, html.ohne-bewegung *::before, html.ohne-bewegung *::after 
 
 .tabelle td.umbruch { white-space: normal; min-width: 12rem; }
 #vergleich-tabelle th, #vergleich-tabelle td { white-space: normal; }
+
+/* Prüfhinweise */
+.badge-hinweis { background: var(--gelb-bg); color: var(--gelb-text); border-color: var(--gelb-rand); }
+.hinweis-warnung { border-color: var(--gelb-rand); background: var(--gelb-bg); color: var(--gelb-text); }
+.legende-hinweis { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px dotted var(--gelb-rand); vertical-align: middle; }
+.flaechen-marker.hinweis span { border: 3px dotted #b88a00; }
+.formel-liste { margin: .2rem 0; padding-left: 1.1rem; font-size: .85rem; }

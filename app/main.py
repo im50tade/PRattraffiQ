@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,7 +46,9 @@ def initialisiere() -> None:
     quelle = GeoJsonQuelle(konf.datenverzeichnis())
     zustand.finder = Flaechenfinder(quelle, konf.bewertung())
     mon = konf.monitoring()
-    zustand.monitoring = MonitoringDienst(_datensaetze(quelle, "pr_bestand"), _datensaetze(quelle, "sharing_stationen"), mon)
+    befragungen = Path(os.environ.get("PR_BEFRAGUNGEN", konf.WURZEL / mon["wirkung"]["befragungen_datei"]))
+    zustand.monitoring = MonitoringDienst(_datensaetze(quelle, "pr_bestand"), _datensaetze(quelle, "sharing_stationen"), mon,
+                                          befragungen_datei=befragungen)
     zustand.wirkung = WirkungsDienst(
         _datensaetze(quelle, "pr_bestand"), _datensaetze(quelle, "einfallachsen"),
         ZaehlreihenSimulator(mon["wirkungsdaten"], mon["wirkung"]["verlagerungsanteil"], mon["simulator"]["zufallssaat"]),
@@ -117,6 +120,8 @@ def konfiguration():
         "regionen": {k: v["label"] for k, v in konf.gesamt()["region"]["regionen"].items()},
         "indikatoren": {k: {"label": v["label"], "beschreibung": v["beschreibung"]} for k, v in b["indikatoren"].items()},
         "profile": b["profile"],
+        "ausschluss": b["ausschluss"]["gebietstypen"],
+        "nachfragemodell": b["nachfragemodell"],
         "ampel": m["ampel"],
         "aktualisierung": {"intervall_s": zustand.monitoring.intervall_s, "zeitraffer": zustand.monitoring.zeitraffer,
                            "zeitraffer_optionen": m["aktualisierung"]["zeitraffer_optionen"]},
@@ -232,3 +237,8 @@ def wirkung(standort_id: str):
 @app.put("/api/wirkung/{standort_id}/befragung", tags=["Wirkung"])
 def befragung_speichern(standort_id: str, b: Befragung):
     return zustand.monitoring.setze_befragung(standort_id, b.verlagerungsanteil_prozent / 100, b.stichprobe_n, b.erhebungszeitraum)
+
+
+@app.delete("/api/wirkung/{standort_id}/befragung", tags=["Wirkung"])
+def befragung_zuruecksetzen(standort_id: str):
+    return zustand.monitoring.entferne_befragung(standort_id)

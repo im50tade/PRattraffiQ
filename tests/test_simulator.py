@@ -70,3 +70,20 @@ def test_stubs_dokumentiert(quelle):
     assert quelle.beschreibung()["schnittstelle"]
     with pytest.raises(NotImplementedError):
         quelle.lese(datetime(2026, 1, 1))
+
+
+def test_befragung_wird_gespeichert_und_geladen(tmp_path):
+    from app.services.monitoring import MonitoringDienst
+
+    bestand = [{"id": "X", "name": "Test", "stellplaetze": 100, "gebuehr_je_parkvorgang_eur": 1.0, "spitzenauslastung_werktag": 0.8,
+                "investition_eur": 1e6, "betriebskosten_jahr_eur": 1e4, "vermiedene_pkw_km_je_fahrt": 10, "eroeffnung": "2026-01-01"}]
+    konfig = dict(konf.monitoring(), historie={**konf.monitoring()["historie"], "vorlauf_tage": 1})
+    datei = tmp_path / "befragungen.json"
+    a = MonitoringDienst(bestand, [], konfig, befragungen_datei=datei)
+    a.setze_befragung("X", 0.42, 120, "Mai 2026")
+    b = MonitoringDienst(bestand, [], konfig, befragungen_datei=datei)
+    assert b.befragung["X"]["verlagerungsanteil"] == pytest.approx(0.42)
+    assert b.befragung["X"]["quelle"] == "Befragung (gespeichert)"
+    datei.write_text("kein json", encoding="utf-8")
+    c = MonitoringDienst(bestand, [], konfig, befragungen_datei=datei)
+    assert c.befragung["X"]["verlagerungsanteil"] == pytest.approx(0.3)

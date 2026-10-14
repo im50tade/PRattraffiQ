@@ -11,23 +11,29 @@ region:
       datenverzeichnis: "data/frankfurt"
       testdaten: true                 # blendet im UI den Hinweis „Testdaten“ ein
       karte: {mitte: [50.115, 8.680], zoom: 11}
-      # Gemeindeliste mit amtlichem Gemeindeschlüssel (AGS) – dient später zum Filtern
+      # Gemeindeliste mit amtlichem Gemeindeschlüssel (AGS) – vor produktiver Nutzung mit dem Gemeindeverzeichnis
+      # des Hessischen Statistischen Landesamts abgleichen; dient zum Filtern
       # von Pendlerstatistik, Zählstellen und Kataster beim Wechsel auf echte Daten
       gemeinden:
         - {name: "Frankfurt am Main", ags: "06412000", rolle: "Pilotstadt"}
         - {name: "Offenbach am Main", ags: "06413000", rolle: "Referenzort"}
         - {name: "Bad Homburg v. d. Höhe", ags: "06434001", rolle: "Referenzort"}
         - {name: "Oberursel (Taunus)", ags: "06434008", rolle: "Referenzort"}
-        - {name: "Hanau", ags: "06435014", rolle: "Referenzort"}
+        - {name: "Hanau", ags: "06415000", rolle: "Referenzort"}   # kreisfrei seit 2026, vorher 06435014
         - {name: "Eschborn", ags: "06436003", rolle: "Referenzort"}
-        - {name: "Neu-Isenburg", ags: "06438008", rolle: "Referenzort"}
+        - {name: "Neu-Isenburg", ags: "06438009", rolle: "Referenzort"}
       kreise: []
     rhein_main:
       label: "Metropolregion Frankfurt/Rhein-Main (Erweiterung)"
       datenverzeichnis: "data/rhein_main"   # noch nicht befüllt; gleiche Layer-Struktur wie data/frankfurt
       testdaten: false
       karte: {mitte: [50.10, 8.65], zoom: 9}
-      gemeinden: []                   # alternativ einzelne Gemeinden ergänzen
+      gemeinden:                      # kreisfreie Städte und einzelne Gemeinden außerhalb der Kreisliste
+        - {name: "Frankfurt am Main", ags: "06412000", rolle: "Kernstadt"}
+        - {name: "Offenbach am Main", ags: "06413000", rolle: "kreisfreie Stadt"}
+        - {name: "Hanau", ags: "06415000", rolle: "kreisfreie Stadt (seit 2026 nicht mehr im Main-Kinzig-Kreis)"}
+        - {name: "Darmstadt", ags: "06411000", rolle: "kreisfreie Stadt"}
+        - {name: "Wiesbaden", ags: "06414000", rolle: "kreisfreie Stadt"}
       kreise:                         # Erweiterung über Kreisliste: alle Gemeinden dieser Kreise
         - {name: "Main-Taunus-Kreis", schluessel: "06436"}
         - {name: "Hochtaunuskreis", schluessel: "06434"}
@@ -46,23 +52,42 @@ bewertung:
     flaechenbedarf_je_stellplatz_m2: 25 # inkl. Fahrgassen
     nutzbarer_flaechenanteil: 0.85      # Abzug für Zufahrt, Grün, Nebenanlagen
 
+  nachfragemodell:
+    # korridor: Pendlerströme Herkunftsgemeinde → Zentrum (Layer "pendlerquellen"); die Fläche muss auf dem Weg liegen
+    # achse:    Einpendler der nächstgelegenen Einfallachse, linear abnehmend bis "einzugsradius_achse_m"
+    verfahren: korridor
+    korridorbreite_m: 3000            # bis zu diesem Abstand von der Luftlinie Gemeinde–Zentrum zählt der Strom (linear abnehmend)
+    min_lage_anteil: 0.0              # 0 = Fläche direkt am Wohnort zählt mit
+    max_lage_anteil: 0.85             # im letzten Streckenabschnitt vor dem Zentrum werden kaum noch Pkw-Fahrten abgefangen
+
   ausschluss:
-    # K.-o.-Kriterium: Jede Überlappung mit diesen Gebietstypen schließt die Fläche aus dem Ranking aus.
+    # Je Gebietstyp: ko_ab_anteil = Ausschluss ab diesem Flächenanteil (0.0 = jede Überlappung),
+    # hinweis_ab_anteil = unterhalb der K.-o.-Schwelle Prüfhinweis, die Fläche bleibt im Ranking.
     gebietstypen:
-      schutzgebiet: "Schutzgebiet"
-      ueberschwemmungsgebiet: "Überschwemmungsgebiet"
-    mindestueberlappung_anteil: 0.0     # 0.0 = jede Überlappung führt zum Ausschluss
+      schutzgebiet:
+        label: "Schutzgebiet"
+        ko_ab_anteil: 0.0
+      ueberschwemmungsgebiet:
+        label: "Überschwemmungsgebiet"
+        ko_ab_anteil: 0.10            # kleine Randüberlappungen lassen sich durch die Anordnung der Stellplätze meiden
+        hinweis_ab_anteil: 0.0
+      wasserschutzgebiet_zone_1_2:    # für echte Daten (HLNUG) vorbereitet, in den Testdaten nicht enthalten
+        label: "Wasserschutzgebiet Zone I/II"
+        ko_ab_anteil: 0.0
+      wasserschutzgebiet_zone_3:
+        label: "Wasserschutzgebiet Zone III"
+        hinweis_ab_anteil: 0.0
 
   indikatoren:
     nachfrage:
       label: "Nachfragepotenzial"
-      beschreibung: "Einpendler auf den Einfallachsen im Einzugsbereich, linear abnehmend mit dem Abstand zur Achse"
+      beschreibung: "Einpendler, deren Weg ins Zentrum an der Fläche vorbeiführt (Korridormodell, siehe nachfragemodell)"
       komponenten:
         einpendler_einzugsbereich:
           label: "Einpendler im Einzugsbereich"
           einheit: "Personen/Tag"
           min: 2000
-          max: 30000
+          max: 25000
           anteil: 1.0
     miv:
       label: "MIV-Bezug"
@@ -234,6 +259,7 @@ monitoring:
     verlagerungsanteil: 0.30          # Anteil der P+R-Nutzer, die ohne P+R mit dem Pkw ins Zentrum gefahren wären
     emissionsfaktor_g_je_km: 150      # CO₂-Äquivalente je Pkw-Kilometer (Annahme, Pkw-Bestandsmix)
     querschnittsfahrten_je_verlagerter_fahrt: 2   # Hin- und Rückweg passieren die Zählstelle
+    befragungen_datei: "data/befragungen.json"   # eingegebene Befragungsergebnisse (nur aggregierte Anteile)
 
   simulator:
     zufallssaat: 42

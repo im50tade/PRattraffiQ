@@ -46,6 +46,10 @@ class TestKosten:
         assert ws.break_even_auslastung(0.40, dg) == pytest.approx(0.80)
         assert ws.break_even_auslastung(0.40, 0) is None
 
+    def test_kostendeckende_gebuehr(self):
+        assert ws.kostendeckende_gebuehr(85_000, 34_000) == pytest.approx(2.5)
+        assert ws.kostendeckende_gebuehr(85_000, 0) is None
+
     def test_hochrechnung(self):
         assert ws.hochrechnung_jahr(10) == 3650
 
@@ -65,6 +69,8 @@ class TestWirkung:
     def test_kosten_je_verlagerter_fahrt(self):
         assert wk.kosten_je_verlagerter_fahrt(85_000, 25_000, 20_000) == pytest.approx(3.0)
         assert wk.kosten_je_verlagerter_fahrt(85_000, 0, 0) is None
+        assert wk.kosten_je_verlagerter_fahrt_brutto(85_000, 20_000) == pytest.approx(4.25)
+        assert wk.kosten_je_verlagerter_fahrt_brutto(85_000, 0) is None
 
     def test_sharing(self):
         assert wk.fahrten_je_fahrzeug_tag(30, 10) == pytest.approx(3)
@@ -117,6 +123,9 @@ class TestKennzahlen:
         assert k["vermiedene_pkw_km_tag"]["wert"] == pytest.approx(300)
         assert k["co2_einsparung_tag"]["wert"] == pytest.approx(45)
         assert k["kosten_je_verlagerter_fahrt"]["wert"] == pytest.approx((85_000 - 54_750) / (30 * 365))
+        assert k["kosten_je_verlagerter_fahrt_brutto"]["wert"] == pytest.approx(85_000 / (30 * 365))
+        # 700 Parkvorgänge / 7 Tage × 365 = 36 500 je Jahr
+        assert k["kostendeckende_gebuehr"]["wert"] == pytest.approx(85_000 / 36_500)
         assert erg["sharing"][0]["fahrzeugauslastung"]["wert"] == pytest.approx(0.05)
         for eintrag in k.values():
             assert eintrag["formel"] and eintrag["eingaben"]

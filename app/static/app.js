@@ -148,6 +148,7 @@ const LAYER_DEFINITION = [
   { name: "schutzgebiete_sg", label: "Schutzgebiete", farbe: "#2e7d43", an: true },
   { name: "schutzgebiete_ug", label: "Überschwemmungsgebiete", farbe: "#38bdf8", an: true },
   { name: "radwege", label: "Radwege", farbe: "#65a30d", an: false },
+  { name: "pendlerquellen", label: "Pendlerströme ins Zentrum (Testdaten)", farbe: "#b45309", an: false },
   { name: "stadtgebiet", label: "Stadtgrenze und Zentrum", farbe: "#64748b", an: true },
   { name: "gewaesser", label: "Main", farbe: "#60a5fa", an: true },
   { name: "referenzorte", label: "Referenzorte", farbe: "#334155", an: true },
@@ -177,7 +178,7 @@ function initKarte() {
 }
 
 async function ladeLayer() {
-  const namen = ["flaechenkandidaten", "einfallachsen", "haltestellen", "sharing_stationen", "pr_bestand", "schutzgebiete", "radwege", "stadtgebiet", "gewaesser", "referenzorte"];
+  const namen = ["flaechenkandidaten", "einfallachsen", "haltestellen", "sharing_stationen", "pr_bestand", "schutzgebiete", "radwege", "stadtgebiet", "pendlerquellen", "gewaesser", "referenzorte"];
   const daten = Object.fromEntries(await Promise.all(namen.map(async (n) => [n, await api(`/api/layer/${n}`)])));
 
   const L_ = zustand.layer;
@@ -195,6 +196,16 @@ async function ladeLayer() {
   const ug = { type: "FeatureCollection", features: daten.schutzgebiete.features.filter((f) => f.properties.typ === "ueberschwemmungsgebiet") };
   L_.schutzgebiete_sg = L.geoJSON(sg, { style: { color: "#2e7d43", weight: 1.5, fillColor: "#4ade80", fillOpacity: .3 }, onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)} (Testdaten)`) });
   L_.schutzgebiete_ug = L.geoJSON(ug, { style: { color: "#0284c7", weight: 1.5, fillColor: "#38bdf8", fillOpacity: .35 }, onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)} (Testdaten)`) });
+  // Pendlerströme: Herkunftsgemeinde → Zentrum, Linienstärke nach Einpendlerzahl
+  const zentrum = daten.stadtgebiet.features.find((f) => f.properties.typ === "zentrum").geometry.coordinates;
+  L_.pendlerquellen = L.layerGroup(daten.pendlerquellen.features.map((f) => {
+    const [lon, lat] = f.geometry.coordinates;
+    const text = `<strong>${esc(f.properties.name)}</strong><br>${zahl(f.properties.einpendler)} Einpendler je Werktag (Testdaten)`;
+    return L.layerGroup([
+      L.polyline([[lat, lon], [zentrum[1], zentrum[0]]], { color: "#b45309", weight: 1 + f.properties.einpendler / 2500, opacity: .45, dashArray: "4 6" }).bindTooltip(text),
+      L.circleMarker([lat, lon], { radius: 5, color: "#fff", weight: 1.5, fillColor: "#b45309", fillOpacity: 1 }).bindTooltip(text),
+    ]);
+  }));
   L_.radwege = L.geoJSON(daten.radwege, { style: { color: "#65a30d", weight: 3, dashArray: "2 6" }, onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name)) });
   L_.einfallachsen = L.geoJSON(daten.einfallachsen, {
     style: { color: "#c2410c", weight: 6, opacity: .75 },
@@ -251,7 +262,7 @@ async function ladeLayer() {
     cb.addEventListener("change", umschalten);
   });
   // Reihenfolge der Darstellung: Flächen zuletzt, damit sie anklickbar oben liegen
-  ["osm", "stadtgebiet", "gewaesser", "schutzgebiete_ug", "schutzgebiete_sg", "radwege", "einfallachsen", "pr_bestand", "flaechenkandidaten", "sharing_stationen", "haltestellen", "referenzorte"]
+  ["osm", "stadtgebiet", "gewaesser", "schutzgebiete_ug", "schutzgebiete_sg", "pendlerquellen", "radwege", "einfallachsen", "pr_bestand", "flaechenkandidaten", "sharing_stationen", "haltestellen", "referenzorte"]
     .forEach((n) => { if ($(`#layer-${n}`).checked) zustand.layer[n].addTo(zustand.karte); });
 }
 
@@ -270,13 +281,14 @@ function faerbeFlaechen() {
       span.style.background = ausgeschlossen ? "#e5e7eb" : scoreFarbe(e.gesamtscore);
       span.style.color = ausgeschlossen || e.gesamtscore > 62 ? "#111827" : "#ffffff";
       el.classList.toggle("ausgeschlossen", ausgeschlossen);
+      el.classList.toggle("hinweis", !ausgeschlossen && e.hinweise.length > 0);
       el.classList.toggle("aktiv", aktiv);
     }
     m.options.title = ausgeschlossen ? `${e.name}, ausgeschlossen` : `${e.name}, Rang ${e.rang}, Gesamtscore ${zahl(e.gesamtscore, 1)}`;
     if (el) { el.title = m.options.title; el.setAttribute("aria-label", m.options.title); }
     m.unbindTooltip().bindTooltip(ausgeschlossen
       ? `<strong>${esc(e.name)}</strong> – ausgeschlossen<br>${e.ausschlussgruende.map(esc).join("<br>")}`
-      : `<strong>${esc(e.name)}</strong><br>Rang ${e.rang} · Gesamtscore ${zahl(e.gesamtscore, 1)}`);
+      : `<strong>${esc(e.name)}</strong><br>Rang ${e.rang} · Gesamtscore ${zahl(e.gesamtscore, 1)}${e.hinweise.length ? `<br>⚠ Prüfhinweis: ${e.hinweise.map(esc).join("<br>")}` : ""}`);
     if (e.ausschlussgruende.length) {
       l.setStyle({ color: "#c62832", weight: aktiv ? 4 : 2, dashArray: "5 4", fillColor: "#9ca3af", fillOpacity: .45 });
       l.bindTooltip(`<strong>${esc(e.name)}</strong> – ausgeschlossen<br>${e.ausschlussgruende.map(esc).join("<br>")}`);
@@ -392,10 +404,10 @@ function zeichneRanking() {
     return richtung === "aufsteigend" ? r : -r;
   });
   $("#ranking-tabelle tbody").innerHTML = zeilen.map((e) => `
-    <tr tabindex="0" data-id="${e.id}" class="${e.id === zustand.aktiveFlaeche ? "aktiv" : ""}" aria-label="${esc(e.name)}, Rang ${e.rang}, Gesamtscore ${zahl(e.gesamtscore, 1)}">
+    <tr tabindex="0" data-id="${e.id}" class="${e.id === zustand.aktiveFlaeche ? "aktiv" : ""}" aria-label="${esc(e.name)}, Rang ${e.rang}, Gesamtscore ${zahl(e.gesamtscore, 1)}${e.hinweise.length ? ", mit Prüfhinweis" : ""}">
       <td><input type="checkbox" data-vergleich="${e.id}" aria-label="${esc(e.name)} für Vergleich auswählen" ${zustand.auswahl.has(e.id) ? "checked" : ""}></td>
       <td>${e.rang}</td>
-      <td class="links">${esc(e.name)}</td>
+      <td class="links">${esc(e.name)}${e.hinweise.length ? ` <span class="badge badge-hinweis" title="${esc(e.hinweise.join("; "))}"><span aria-hidden="true">⚠</span> Prüfhinweis</span>` : ""}</td>
       <td class="score">${zahl(e.gesamtscore, 1)}<span class="score-balken" style="width:${Math.round(e.gesamtscore * 0.6)}px;background:${scoreFarbe(e.gesamtscore)}" aria-hidden="true"></span></td>
       ${Object.keys(ind).map((k) => `<td>${zahl(e.teilscores[k], 0)}</td>`).join("")}
       <td>${zahl(e.stellplaetze)}</td>
@@ -485,6 +497,7 @@ async function ladeSteckbrief(id, fokus) {
     : `keine S-Bahn-Station innerhalb von ${s.parameter.oev_radius_m} m`;
 
   $("#steckbrief-inhalt").innerHTML = `
+    ${s.hinweise.length ? `<p class="hinweis hinweis-warnung"><strong><span aria-hidden="true">⚠</span> Prüfhinweis:</strong> ${s.hinweise.map(esc).join("; ")}. Die Fläche bleibt im Ranking.</p>` : ""}
     ${s.ausgeschlossen ? `<p class="hinweis hinweis-fehler"><strong>Ausgeschlossen (K.-o.):</strong> ${s.ausschlussgruende.map(esc).join("; ")}. Die Fläche bleibt in der Karte sichtbar, erhält aber keinen Rang.</p>` : ""}
     <p class="klein">Alle Sachdaten dieser Fläche sind synthetische Testdaten und treffen keine Aussage über reale Grundstücke oder Eigentümer.</p>
     <div class="steckbrief-raster">
@@ -504,7 +517,7 @@ async function ladeSteckbrief(id, fokus) {
         <h3>Räumliche Herleitung</h3>
         <dl class="kennwerte">
           <dt>Nächste Achse</dt><dd>${esc(h.achse)}, ${zahl(h.distanz_achse_m)} m</dd>
-          <dt>Einpendler</dt><dd><code class="formel">${zahl(h.einpendler_achse)} × max(0; 1 − ${zahl(h.distanz_achse_m)} / ${zahl(s.parameter.einzugsradius_achse_m)}) = ${zahl(h.einpendler_achse * h.abnahmefaktor)}</code></dd>
+          <dt>Einpendler</dt><dd>${nachfrageHerleitung(s)}</dd>
           <dt>Verkehrsmenge</dt><dd>${zahl(h.dtv_achse)} Kfz/24 h, zählt bis ${zahl(s.parameter.max_zufahrtsdistanz_m)} m Abstand</dd>
           <dt>ÖV im Radius</dt><dd>${haltestellen}</dd>
           <dt>Nächste Sharing-Station</dt><dd>${esc(h.naechste_sharing_station)}</dd>
@@ -537,6 +550,22 @@ async function ladeSteckbrief(id, fokus) {
     $("#steckbrief").scrollIntoView({ behavior: bewegung.reduziert ? "auto" : "smooth", block: "start" });
     $("#steckbrief-titel").focus({ preventScroll: true });
   }
+}
+
+function nachfrageHerleitung(s) {
+  const h = s.herleitung;
+  const p = s.parameter;
+  if (h.nachfragemodell !== "korridor") {
+    return `<code class="formel">${zahl(h.einpendler_achse)} × max(0; 1 − ${zahl(h.distanz_achse_m)} / ${zahl(p.einzugsradius_achse_m)}) = ${zahl(h.einpendler_achse * h.abnahmefaktor)}</code>`;
+  }
+  const m = p.nachfragemodell;
+  if (!h.pendlerstroeme.length) {
+    return `Kein Pendlerstrom führt an der Fläche vorbei (Korridor ${zahl(m.korridorbreite_m)} m). Ergebnis: 0`;
+  }
+  const zeilen = h.pendlerstroeme.map((b) => `<li>${esc(b.name)}: ${zahl(b.einpendler)} × (1 − ${zahl(b.abstand_m)} / ${zahl(m.korridorbreite_m)}) = ${zahl(b.beitrag)} <span class="klein">(Lage ${prozent(b.lage_anteil, 0)} der Strecke)</span></li>`).join("");
+  const summe = h.pendlerstroeme.reduce((a, b) => a + b.beitrag, 0);
+  return `Korridormodell: Pendlerströme Gemeinde → Zentrum, die bis ${prozent(m.max_lage_anteil, 0)} der Strecke an der Fläche vorbeiführen
+    <ul class="formel-liste">${zeilen}</ul>Summe: <strong>${zahl(summe)}</strong>`;
 }
 
 const KENNWERT_LABEL = {
@@ -704,7 +733,8 @@ async function ladeLive() {
   }).join("");
 
   const reihen = ["auslastung", "umschlag", "spitzenauslastung", "stosszeiten", "erloes_je_stellplatz_tag", "kosten_je_stellplatz_jahr",
-    "deckungsgrad", "break_even_auslastung", "verlagerte_fahrten_tag", "vermiedene_pkw_km_tag", "co2_einsparung_tag", "co2_einsparung_jahr", "kosten_je_verlagerter_fahrt"];
+    "deckungsgrad", "break_even_auslastung", "kostendeckende_gebuehr", "verlagerte_fahrten_tag", "vermiedene_pkw_km_tag", "co2_einsparung_tag",
+    "co2_einsparung_jahr", "kosten_je_verlagerter_fahrt", "kosten_je_verlagerter_fahrt_brutto"];
   $("#kennzahlen-tabelle").innerHTML = `
     <caption class="sr-only">Kennzahlen aller Standorte und gesamt</caption>
     <thead><tr><th scope="col" class="links">Kennzahl</th>${alle.map((s) => `<th scope="col">${esc(s.name)}</th>`).join("")}</tr></thead>
@@ -731,8 +761,10 @@ async function ladeLive() {
     { scales: { y: prozentAchse(1) }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${prozent(c.raw)} – ${AMPEL[standorte[c.dataIndex].ampel].text}` } } } });
   diagramm("sv-deckungsgrad", "bar", { labels, datasets: [{ label: "Deckungsgrad", data: standorte.map((s) => s.kennzahlen.deckungsgrad.wert), backgroundColor: "#0b5cad" }] },
     { scales: { y: prozentAchse(1) }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => prozent(c.raw) } } } });
-  diagramm("sv-kosten", "bar", { labels, datasets: [{ label: "Kosten je verlagerter Fahrt", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt.wert), backgroundColor: "#7c3aed" }] },
-    { scales: { y: { min: 0, ticks: { callback: (v) => euro(v, 0) } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => euro(c.raw) } } } });
+  diagramm("sv-kosten", "bar", { labels, datasets: [
+    { label: "netto (Zuschussbedarf)", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt.wert), backgroundColor: "#7c3aed" },
+    { label: "brutto (ohne Erlöse)", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt_brutto.wert), backgroundColor: "#c4b5fd" },
+  ] }, { scales: { y: { min: 0, ticks: { callback: (v) => euro(v, 0) } } }, plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${euro(c.raw)}` } } } });
 }
 
 function befuelleStandortAuswahl(sel, alle, standard) {
@@ -804,6 +836,14 @@ function initWirkung() {
       status.textContent = `Übernommen: Verlagerungsanteil ${zahl(daten.verlagerungsanteil_prozent)} % für diesen Standort. Monitoring und Abgleich sind aktualisiert.`;
       ladeWirkung();
     } catch (err) { status.textContent = `Nicht übernommen: ${err.message}`; }
+  });
+  $("#bf-zuruecksetzen").addEventListener("click", async () => {
+    const id = $("#wk-standort").value;
+    try {
+      await api(`/api/wirkung/${id}/befragung`, { method: "DELETE" });
+      $("#bf-status").textContent = "Zurückgesetzt: Es gilt wieder die Standardannahme aus der Konfiguration.";
+      ladeWirkung();
+    } catch (err) { $("#bf-status").textContent = `Nicht zurückgesetzt: ${err.message}`; }
   });
   reiterAktionen["panel-wirkung"] = async () => {
     if (!$("#wk-standort").options.length) {
@@ -886,8 +926,16 @@ function zeichneMethodik() {
     </section>
     <section class="karte-block methodik-text">
       <h2>Bewertung</h2>
-      <p>Jeder Indikator wird linear auf 0 bis 100 normiert; Schwellenwerte stehen in <code>config/einstellungen.yaml</code>. Der Gesamtscore ist die Summe der Teilscores multipliziert mit den auf 100 % normierten Gewichten. Flächen, die ein Schutz- oder Überschwemmungsgebiet überlappen, werden als K.-o. aus dem Ranking genommen.</p>
+      <p>Jeder Indikator wird linear auf 0 bis 100 normiert; Schwellenwerte stehen in <code>config/einstellungen.yaml</code>. Der Gesamtscore ist die Summe der Teilscores multipliziert mit den auf 100 % normierten Gewichten.</p>
       <ul>${Object.values(k.indikatoren).map((i) => `<li><strong>${esc(i.label)}:</strong> ${esc(i.beschreibung)}</li>`).join("")}</ul>
+      <h3>Nachfragemodell</h3>
+      <p>${k.nachfragemodell.verfahren === "korridor"
+        ? `Korridormodell: Für jede Herkunftsgemeinde wird die Luftlinie zum Zentrum betrachtet. Eine Fläche fängt die Einpendler dieser Gemeinde ab, wenn sie auf dem Weg liegt (bis ${prozent(k.nachfragemodell.max_lage_anteil, 0)} der Strecke) und höchstens ${zahl(k.nachfragemodell.korridorbreite_m)} m von der Linie entfernt ist; der Beitrag nimmt mit dem Abstand linear ab. So zählen Pendlerströme nur einmal und Flächen weit vor dem Zentrum werden nicht benachteiligt.`
+        : "Achsenmodell: Einpendler der nächstgelegenen Einfallachse, linear abnehmend mit dem Abstand zur Achse."}</p>
+      <h3>Ausschluss und Prüfhinweise</h3>
+      <ul>${Object.values(k.ausschluss).map((r) => `<li><strong>${esc(r.label)}:</strong> ${
+        r.ko_ab_anteil === undefined ? "nie Ausschluss" : r.ko_ab_anteil === 0 ? "Ausschluss bei jeder Überlappung" : `Ausschluss ab ${prozent(r.ko_ab_anteil, 0)} Flächenanteil`}${
+        r.hinweis_ab_anteil !== undefined ? (r.ko_ab_anteil === undefined ? ", Prüfhinweis bei jeder Überlappung" : ", darunter Prüfhinweis (Fläche bleibt im Ranking)") : ""}</li>`).join("")}</ul>
     </section>
     <section class="karte-block methodik-text">
       <h2>Annahmen für Monitoring und Wirkung</h2>
@@ -897,7 +945,9 @@ function zeichneMethodik() {
         <li>Abschreibungsdauer: ${zahl(an.abschreibungsdauer_jahre)} Jahre linear; kalkulatorischer Zins ${prozent(an.kapitalzins, 1)} auf das durchschnittlich gebundene Kapital (Investition / 2).</li>
         <li>Hochrechnung auf ein Jahr: Durchschnittstag der letzten 7 Tage × ${zahl(an.tage_je_jahr)} Tage.</li>
         <li>Break-even-Auslastung: Ø Tagesspitzenauslastung / Deckungsgrad, unter der Annahme, dass Erlöse proportional zur Auslastung wachsen.</li>
-        <li>Kosten je verlagerter Fahrt: (Gesamtkosten − Erlöse) / verlagerte Fahrten, also der Zuschussbedarf je verlagerter Pkw-Fahrt.</li>
+        <li>Kosten je verlagerter Fahrt: netto = (Gesamtkosten − Erlöse) / verlagerte Fahrten, also der Zuschussbedarf; zusätzlich brutto = Gesamtkosten / verlagerte Fahrten für den Vergleich mit anderen Maßnahmen.</li>
+        <li>Kostendeckende Gebühr: Gesamtkosten je Jahr / Parkvorgänge je Jahr, bei unveränderter Nachfrage.</li>
+        <li>Befragungsergebnisse werden je Standort als aggregierter Anteil gespeichert und überstehen einen Neustart; sie lassen sich auf die Standardannahme zurücksetzen.</li>
       </ul>
     </section>
     <section class="karte-block">

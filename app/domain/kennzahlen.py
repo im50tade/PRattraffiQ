@@ -127,8 +127,18 @@ def berechne_kennzahlen(e: StandortEingang, p: Parameter) -> dict:
         {"Ø Tagesspitzenauslastung": f"{e.mittlere_tagesspitze_7d * 100:.1f} %", "Deckungsgrad": f"{dg * 100:.1f} %"},
         hinweis=(
             "Ohne Parkgebühr ist kein Break-even erreichbar." if be is None
-            else ("Liegt über 100 %: Kostendeckung nur mit höherer Gebühr oder niedrigeren Kosten möglich." if be > 1 else "")
+            else ("Über 100 %: Kostendeckung allein durch mehr Nutzung nicht möglich; Gebühr oder Kosten anpassen." if be > 1
+                  else "Bezugsgröße ist die Tagesspitze, weil sie über die Dimensionierung entscheidet.")
         ),
+    )
+
+    parkvorgaenge_jahr = ws.hochrechnung_jahr(e.parkvorgaenge_7d / tage, p.tage_je_jahr)
+    kg = ws.kostendeckende_gebuehr(jk.gesamt_eur, parkvorgaenge_jahr)
+    k["kostendeckende_gebuehr"] = _kz(
+        "Kostendeckende Gebühr je Parkvorgang", kg, "€", "Gesamtkosten je Jahr / Parkvorgänge je Jahr",
+        {"Gesamtkosten je Jahr": round(jk.gesamt_eur), "Parkvorgänge je Jahr (Ø-Tag × Tage)": round(parkvorgaenge_jahr),
+         "aktuelle Gebühr": gebuehr_text},
+        hinweis="Gilt bei unveränderter Nachfrage; höhere Gebühren können Nutzer abschrecken.",
     )
 
     nutzer_tag = e.parkvorgaenge_7d / tage
@@ -157,9 +167,15 @@ def berechne_kennzahlen(e: StandortEingang, p: Parameter) -> dict:
     fahrten_jahr = ws.hochrechnung_jahr(fahrten_tag, p.tage_je_jahr)
     kvf = wk.kosten_je_verlagerter_fahrt(jk.gesamt_eur, erloes_jahr, fahrten_jahr)
     k["kosten_je_verlagerter_fahrt"] = _kz(
-        "Kosten je verlagerter Fahrt", kvf, "€", "(Gesamtkosten je Jahr − Erlöse je Jahr) / verlagerte Fahrten je Jahr",
+        "Kosten je verlagerter Fahrt (netto)", kvf, "€", "(Gesamtkosten je Jahr − Erlöse je Jahr) / verlagerte Fahrten je Jahr",
         {"Gesamtkosten je Jahr": round(jk.gesamt_eur), "Erlöse je Jahr": round(erloes_jahr), "verlagerte Fahrten je Jahr": round(fahrten_jahr)},
         hinweis="Zuschussbedarf je verlagerter Pkw-Fahrt" if kvf is not None else "Keine verlagerten Fahrten im Zeitraum.",
+    )
+    kvf_brutto = wk.kosten_je_verlagerter_fahrt_brutto(jk.gesamt_eur, fahrten_jahr)
+    k["kosten_je_verlagerter_fahrt_brutto"] = _kz(
+        "Kosten je verlagerter Fahrt (brutto)", kvf_brutto, "€", "Gesamtkosten je Jahr / verlagerte Fahrten je Jahr",
+        {"Gesamtkosten je Jahr": round(jk.gesamt_eur), "verlagerte Fahrten je Jahr": round(fahrten_jahr)},
+        hinweis="Volle Kosten ohne Abzug der Parkerlöse; für den Vergleich mit anderen Maßnahmen.",
     )
 
     sharing = []
