@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
         onerror="this.onerror=null;this.href='/static/vendor/leaflet/leaflet.css'">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b5cad'/%3E%3Ctext x='16' y='22' font-size='15' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP+R%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.css">
+  <link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.Default.css">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -19,16 +21,24 @@
       <p class="kopf-region"><span id="region-label">Pilotraum Frankfurt am Main</span>
         <span id="testdaten-hinweis" class="badge badge-test" title="Alle Sachdaten sind synthetisch">Testdaten</span></p>
     </div>
-    <label class="schalter">
-      <input type="checkbox" id="bewegung-reduzieren">
-      <span>Animationen reduzieren</span>
-    </label>
+    <div class="kopf-schalter">
+      <label class="schalter">
+        <input type="checkbox" id="testdaten-anzeigen" checked>
+        <span>Testdaten anzeigen</span>
+      </label>
+      <label class="schalter">
+        <input type="checkbox" id="bewegung-reduzieren">
+        <span>Animationen reduzieren</span>
+      </label>
+    </div>
   </header>
 
   <nav class="reiter" role="tablist" aria-label="Module">
     <button role="tab" id="tab-finder" aria-controls="panel-finder" aria-selected="true">Flächenfinder</button>
+    <button role="tab" id="tab-netz" aria-controls="panel-netz" aria-selected="false" tabindex="-1">Netz und Kandidaten</button>
     <button role="tab" id="tab-monitoring" aria-controls="panel-monitoring" aria-selected="false" tabindex="-1">Live-Monitoring</button>
     <button role="tab" id="tab-wirkung" aria-controls="panel-wirkung" aria-selected="false" tabindex="-1">Wirkungsanalyse</button>
+    <button role="tab" id="tab-datenlage" aria-controls="panel-datenlage" aria-selected="false" tabindex="-1">Datenlage</button>
     <button role="tab" id="tab-methodik" aria-controls="panel-methodik" aria-selected="false" tabindex="-1">Daten und Methodik</button>
   </nav>
 
@@ -37,6 +47,8 @@
 
     <!-- ===================================================== Flächenfinder -->
     <section id="panel-finder" role="tabpanel" aria-labelledby="tab-finder" tabindex="0">
+      <p class="hinweis testmodul-hinweis">Dieses Modul arbeitet derzeit ausschließlich mit Testdaten. Sie sind ausgeblendet; zum Anzeigen oben „Testdaten anzeigen“ einschalten.</p>
+      <div class="testmodul-inhalt">
       <div class="finder-raster">
         <aside class="karte-seite" aria-labelledby="gewichtung-titel">
           <h2 id="gewichtung-titel">Gewichtung</h2>
@@ -105,10 +117,13 @@
           <div class="tabelle-rahmen"><table id="vergleich-tabelle" class="tabelle"></table></div>
         </div>
       </section>
+      </div>
     </section>
 
     <!-- ===================================================== Live-Monitoring -->
     <section id="panel-monitoring" role="tabpanel" aria-labelledby="tab-monitoring" tabindex="0" hidden>
+      <p class="hinweis testmodul-hinweis">Dieses Modul arbeitet derzeit ausschließlich mit Testdaten. Sie sind ausgeblendet; zum Anzeigen oben „Testdaten anzeigen“ einschalten.</p>
+      <div class="testmodul-inhalt">
       <section class="karte-block steuerung" aria-labelledby="steuerung-titel">
         <h2 id="steuerung-titel">Datenquelle und Simulation</h2>
         <div class="steuerung-raster">
@@ -186,10 +201,13 @@
         <h2 id="adapter-titel">Adapter der Datenquellen</h2>
         <div id="adapter-liste" class="adapter-liste"></div>
       </section>
+      </div>
     </section>
 
     <!-- ===================================================== Wirkungsanalyse -->
     <section id="panel-wirkung" role="tabpanel" aria-labelledby="tab-wirkung" tabindex="0" hidden>
+      <p class="hinweis testmodul-hinweis">Dieses Modul arbeitet derzeit ausschließlich mit Testdaten. Sie sind ausgeblendet; zum Anzeigen oben „Testdaten anzeigen“ einschalten.</p>
+      <div class="testmodul-inhalt">
       <section class="karte-block" aria-labelledby="wirkung-titel">
         <h2 id="wirkung-titel">Vorher-Nachher-Vergleich</h2>
         <div class="knopf-reihe">
@@ -228,6 +246,112 @@
           <div id="abgleich"></div>
         </section>
       </div>
+      </div>
+    </section>
+
+    <!-- ===================================================== Netz und Kandidaten -->
+    <section id="panel-netz" role="tabpanel" aria-labelledby="tab-netz" tabindex="0" hidden>
+      <div class="finder-raster">
+        <aside class="karte-seite" aria-labelledby="netz-ebenen-titel">
+          <h2 id="netz-ebenen-titel">Kartenebenen</h2>
+          <p class="klein">Alle Ebenen lassen sich gleichzeitig ein- und ausschalten. Nebenstraßen erscheinen ab Zoomstufe 13, Haltestellen werden in kleinen Maßstäben zusammengefasst.</p>
+          <fieldset class="layer-auswahl"><legend>Bestand und Flächen</legend>
+            <label><input type="checkbox" id="nl-bestand" checked><span class="layer-farbe" style="background:#111827" aria-hidden="true"></span>Bestehende P+R-Anlagen</label>
+            <label><input type="checkbox" id="nl-kandidaten" checked><span class="layer-farbe" style="background:#2e7d43" aria-hidden="true"></span>Freiflächen (Kandidaten)</label>
+            <label><input type="checkbox" id="nl-zwischen"><span class="layer-farbe" style="background:#d97706" aria-hidden="true"></span>Zwischennutzung</label>
+          </fieldset>
+          <fieldset class="layer-auswahl"><legend>Straßen</legend>
+            <label><input type="checkbox" id="nl-str-Autobahn" checked><span class="layer-farbe" style="background:#1d4ed8" aria-hidden="true"></span>Autobahn</label>
+            <label><input type="checkbox" id="nl-str-Bundesstraße" checked><span class="layer-farbe" style="background:#c2410c" aria-hidden="true"></span>Bundesstraße</label>
+            <label><input type="checkbox" id="nl-str-Hauptstraße" checked><span class="layer-farbe" style="background:#ca8a04" aria-hidden="true"></span>Hauptstraße</label>
+            <label><input type="checkbox" id="nl-str-Nebenstraße"><span class="layer-farbe" style="background:#9ca3af" aria-hidden="true"></span>Nebenstraße</label>
+            <label><input type="checkbox" id="nl-radnetz"><span class="layer-farbe" style="background:#0891b2" aria-hidden="true"></span>Radnetz</label>
+          </fieldset>
+          <fieldset class="layer-auswahl"><legend>ÖPNV</legend>
+            <label><input type="checkbox" id="nl-vm-S-Bahn" checked><span class="layer-farbe" style="background:#15803d" aria-hidden="true"></span>S-Bahn</label>
+            <label><input type="checkbox" id="nl-vm-U-Bahn" checked><span class="layer-farbe" style="background:#1e40af" aria-hidden="true"></span>U-Bahn</label>
+            <label><input type="checkbox" id="nl-vm-Straßenbahn" checked><span class="layer-farbe" style="background:#b91c1c" aria-hidden="true"></span>Straßenbahn</label>
+            <label><input type="checkbox" id="nl-vm-Bus"><span class="layer-farbe" style="background:#7c3aed" aria-hidden="true"></span>Bus</label>
+            <label><input type="checkbox" id="nl-haltestellen" checked>Haltestellen anzeigen</label>
+            <label for="nl-tageszeit" class="feld-label">Takt für</label>
+            <select id="nl-tageszeit"></select>
+            <label for="nl-mindesttakt" class="feld-label">Mindesttakt</label>
+            <select id="nl-mindesttakt">
+              <option value="">alle Takte</option>
+              <option value="5">mindestens alle 5 Minuten</option>
+              <option value="10">mindestens alle 10 Minuten</option>
+              <option value="15">mindestens alle 15 Minuten</option>
+              <option value="20">mindestens alle 20 Minuten</option>
+              <option value="30">mindestens alle 30 Minuten</option>
+            </select>
+            <label for="nl-linie" class="feld-label">Linie</label>
+            <select id="nl-linie"><option value="">alle Linien</option></select>
+          </fieldset>
+          <div class="legende" aria-label="Legende Realismus-Status">
+            <span class="klein">Realismus-Status der Freiflächen</span>
+            <ul class="legende-liste klein">
+              <li><span class="status-punkt status-geprüft" aria-hidden="true">✓</span> geprüft</li>
+              <li><span class="status-punkt status-plausibel" aria-hidden="true">≈</span> plausibel</li>
+              <li><span class="status-punkt status-hinweis" aria-hidden="true">?</span> hinweis (nur Karte)</li>
+              <li><span class="legende-ausschluss" aria-hidden="true"></span> ausgeschlossen (K.-o.)</li>
+            </ul>
+          </div>
+        </aside>
+        <div class="karte-haupt">
+          <div id="netz-karte" role="region" aria-label="Karte mit Bestands-P+R, Straßen, ÖPNV, Radnetz und Freiflächen"></div>
+          <p class="klein karte-hinweis" id="netz-status" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <section class="karte-block" aria-labelledby="netz-detail-titel" id="netz-detail" hidden>
+        <div class="block-kopf">
+          <h2 id="netz-detail-titel" tabindex="-1">Steckbrief</h2>
+          <button type="button" class="knopf knopf-zweit" id="netz-detail-schliessen">Steckbrief schließen</button>
+        </div>
+        <div id="netz-detail-inhalt"></div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="kand-titel">
+        <div class="block-kopf">
+          <h2 id="kand-titel">Kandidaten aus der Pipeline</h2>
+          <div class="knopf-reihe">
+            <label for="kand-profil" class="feld-label">Gewichtungsprofil</label>
+            <select id="kand-profil"></select>
+          </div>
+        </div>
+        <p class="klein">Nur Flächen mit Realismus-Status „geprüft“ oder „plausibel“, ohne K.-o.-Grund und mit bestandenem Vorfilter werden bewertet. Zeile öffnen mit Klick oder Eingabetaste.</p>
+        <div class="tabelle-rahmen"><table id="kand-tabelle" class="tabelle"><caption class="sr-only">Ranking der Kandidaten</caption></table></div>
+        <details class="nicht-im-ranking"><summary id="kand-nicht-summary">Nicht im Ranking</summary><ul id="kand-nicht" class="ausschluss-liste"></ul></details>
+      </section>
+
+      <section class="karte-block" aria-labelledby="zn-titel">
+        <h2 id="zn-titel">Zwischennutzung</h2>
+        <p class="klein">Eigenes Ranking für temporär nutzbare Freiflächen. Altlastenverdacht und die übrigen K.-o.-Kriterien schließen aus; Flächen mit Status „hinweis“ werden nicht bewertet.</p>
+        <div class="tabelle-rahmen"><table id="zn-tabelle" class="tabelle"><caption class="sr-only">Ranking Zwischennutzung</caption></table></div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="review-titel">
+        <div class="block-kopf">
+          <h2 id="review-titel">Review</h2>
+          <div class="knopf-reihe">
+            <label for="review-filter" class="feld-label">Anzeigen</label>
+            <select id="review-filter">
+              <option value="alle">alle Kandidaten</option>
+              <option value="entschieden">nur mit Entscheidung</option>
+              <option value="offen">nur offene</option>
+            </select>
+            <a id="review-export" class="knopf knopf-zweit" href="/api/review/export.csv" download>Review-Liste als CSV</a>
+          </div>
+        </div>
+        <p class="klein">Entscheidungen werden lokal gespeichert und bleiben nach einem Neustart erhalten. „Geprüft“ setzt den Realismus-Status auf geprüft, „verworfen“ nimmt die Fläche aus dem Ranking, „offen“ stellt den automatisch ermittelten Status wieder her.</p>
+        <div class="tabelle-rahmen"><table id="review-tabelle" class="tabelle"><caption class="sr-only">Review-Liste</caption></table></div>
+        <details><summary>Änderungsprotokoll</summary><div class="tabelle-rahmen"><table id="review-protokoll" class="tabelle"></table></div></details>
+      </section>
+    </section>
+
+    <!-- ===================================================== Datenlage -->
+    <section id="panel-datenlage" role="tabpanel" aria-labelledby="tab-datenlage" tabindex="0" hidden>
+      <div id="datenlage"></div>
     </section>
 
     <!-- ===================================================== Methodik -->
@@ -244,6 +368,9 @@
   <script>window.L || document.write('<script src="/static/vendor/leaflet/leaflet.js"><\/script>')</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script>window.Chart || document.write('<script src="/static/vendor/chartjs/chart.umd.js"><\/script>')</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+  <script>(window.L && L.markerClusterGroup) || document.write('<script src="/static/vendor/markercluster/leaflet.markercluster.js"><\/script>')</script>
   <script src="/static/app.js"></script>
+  <script src="/static/erweiterung.js"></script>
 </body>
 </html>

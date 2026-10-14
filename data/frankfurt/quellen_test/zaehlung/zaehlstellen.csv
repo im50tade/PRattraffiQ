@@ -1,0 +1,8 @@
+# Testdaten – synthetische Zählstellen
+id;name;lat;lon;dtv_kfz
+Z1;Testzählstelle A 5 Nord;50.188385;8.625567;98000
+Z2;Testzählstelle A 3 West;50.055013;8.530874;86000
+Z3;Testzählstelle A 66 Ost;50.148504;8.827984;69000
+Z4;Testzählstelle B 3;50.177926;8.703899;31000
+Z5;Testzählstelle B 44;50.06236;8.676452;24000
+Z6;Testzählstelle B 43;50.105808;8.724054;27000

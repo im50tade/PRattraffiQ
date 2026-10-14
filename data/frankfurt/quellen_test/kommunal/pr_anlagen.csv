@@ -1,0 +1,11 @@
+# Testdaten – synthetische kommunale P+R-Liste
+Name;Adresse;Stellplätze;Betreiber;Status;lat;lon
+P+R Weißkirchen;Teststraße 1, Testort;220;Teststadt Parken;In Betrieb;50.177265;8.592634
+P+R Stadion;Teststraße 2, Testort;300;Testarena GmbH;in Betrieb;50.071598;8.6377
+P+R Hanau-Wilhelmsbad;Teststraße 3, Testort;150;Teststadt Parken;in Betrieb;50.139135;8.88378
+P+R Höchst;Teststraße 4, Testort;410;Testbahn AG;geschlossen;50.103544;8.541889
+P+R Bad Homburg Süd;Teststraße 5, Testort;140;Testkreis;in Betrieb;50.218109;8.620223
+P+R Bad Vilbel Nord;Teststraße 6, Testort;95;Testkreis;in Betrieb;50.180244;8.736503
+Geplante P+R-Anlage 1;Planstraße 1, Testort;300;Teststadt Parken;geplant;50.06;8.56
+Geplante P+R-Anlage 2;Planstraße 2, Testort;ca. 180;Teststadt Parken;in Planung;50.155;8.8
+Geplante P+R-Anlage 3;Planstraße 3, Testort;;;unbekannt;50.21;8.7

@@ -36,3 +36,8 @@ def region() -> dict:
 
 def datenverzeichnis() -> Path:
     return WURZEL / region()["datenverzeichnis"]
+
+
+def abschnitt(name: str) -> dict:
+    """Beliebiger Abschnitt der Konfiguration (Erweiterung: quellen, bestand, netz, kandidaten, …)."""
+    return gesamt()[name]

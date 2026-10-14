@@ -19,6 +19,11 @@ erweitert werden kann.
 | **1 Flächenfinder** | Karte mit umschaltbaren Ebenen (Testflächen, Einfallachsen, S-Bahn, Sharing, Schutz-/Überschwemmungsgebiete, Radwege, Bestand, Stadtgrenze, Main, Referenzorte); K.-o.-Ausschluss mit Begründung; gewichtetes Scoring 0–100 mit vier Profilen und Reglern (live); sortierbare Ranking-Tabelle mit Zoom; Steckbrief mit Rohwerten, Normierungsformeln, Gewichten, Kostenbandbreite und regelbasierter Sharing-Empfehlung; Vergleich von 2–3 Flächen; Export als CSV und GeoJSON |
 | **2 Live-Monitoring** | Simulator mit Morgen-/Abendspitze, Wochenende, Rauschen und Wetter; Intervall und Zeitraffer einstellbar; Adapter-Schicht (Simulator implementiert, Sensorik/GBFS/Parkautomat als dokumentierte Stubs); Dashboard mit Ampel (Farbe **und** Symbol/Text), Umschlag, Spitzen, Stoßzeiten, Erlös, Kosten je Stellplatz, Deckungsgrad, Break-even, verlagerte Fahrten, Pkw-km, CO₂, Kosten je verlagerter Fahrt, Sharing-Kennzahlen; Herleitung jeder Kennzahl (Formel, Eingangswerte, Ergebnis); Zeitreihen Tag/Woche; Standortvergleich; CSV-Export der Messwerte |
 | **3 Wirkungsanalyse** | Vorher-Nachher-Vergleich (Kfz an der Zählstelle, ÖV-Einsteiger, Parkdruck im Umfeld) mit Differenz und Trend; Eingabe von Befragungsergebnissen (Verlagerungsanteil), die sofort das Monitoring speist; Abgleich Befragung ↔ Zählung |
+| **Netz und Kandidaten** (Erweiterung) | Bestehende P+R-Anlagen aus OSM (`park_ride`, `capacity`) und kommunaler CSV/GeoJSON, räumlich zusammengeführt (30 m) mit markierten Abweichungen; Straßen nach Klasse mit Linienbreite aus Zählstellen; ÖPNV aus GTFS (S-Bahn, U-Bahn, Straßenbahn, Bus) mit Takt je Tageszeit; Filter nach Verkehrsmittel, Linie und Mindesttakt; Radnetz; Kandidaten-Pipeline aus OSM-Freiflächen mit Vorfilter, K.-o.-Ausschluss und Realismus-Status (geprüft/plausibel/hinweis); eigenes Ranking für Zwischennutzung mit Nutzungsempfehlung, Zeitrahmen und Kostenbandbreite; Review-Modus mit dauerhafter Speicherung, Protokoll und CSV-Export |
+| **Datenlage** (Erweiterung) | Bericht über vorhandene und fehlende Quellen, Bestands-P+R, Haltestellen und Linien je Verkehrsmittel, Freiflächen je Größenklasse und Status; als Reiter und als Befehl `python -m app.datenlage` |
+
+Der Schalter **„Testdaten anzeigen“** im Kopf blendet alle Testdaten aus. Module, die bisher nur mit
+Testdaten arbeiten (Flächenfinder, Monitoring, Wirkung), zeigen dann einen Hinweis statt Inhalt.
 
 ## Installation und Start
 
@@ -66,21 +71,38 @@ app/
 │   ├── scoring.py           Normierung, Gewichte, Bewertung, K.-o., Ranking, Stellplätze, Kostenband, Sharing-Regeln
 │   ├── wirtschaftlichkeit.py Auslastung, Ampel, Umschlag, Erlös, Jahreskosten, Deckungsgrad, Break-even
 │   ├── wirkung.py           Verlagerung, Pkw-km, CO₂, Kosten je Fahrt, Sharing, Vorher-Nachher, Trend
-│   └── kennzahlen.py        Stellt alle Dashboard-Kennzahlen mit Formel + Eingangswerten zusammen
+│   ├── kennzahlen.py        Stellt alle Dashboard-Kennzahlen mit Formel + Eingangswerten zusammen
+│   ├── bestand.py           Status, Stellplätze, Zusammenführung OSM ↔ kommunal mit Abweichungen
+│   ├── netz.py              Straßenklasse, Radnetz, Linienbreite, Verkehrsmittel (GTFS route_type), Takt
+│   ├── kandidaten.py        Vorfilter, Realismus-Status, Review-Auswirkung
+│   └── zwischennutzung.py   Bewertung, Nutzungsempfehlung, Zeitrahmen, Kosten
 ├── adapters/                Austauschbare Datenquellen (Adapter-Muster)
 │   ├── geodaten.py          GeodatenQuelle: GeoJsonQuelle (impl.), GtfsHaltestellenQuelle, GbfsStationsQuelle (Stubs), KombinierteQuelle
 │   ├── monitoring.py        MonitoringQuelle: SimulatorQuelle (impl.), SensorQuelle, GbfsQuelle, ParkautomatQuelle (Stubs)
-│   └── zaehlreihen.py       ZaehlreihenQuelle: ZaehlreihenSimulator (impl.), ZaehlstellenCsvQuelle (Stub)
+│   ├── zaehlreihen.py       ZaehlreihenQuelle: ZaehlreihenSimulator (impl.), ZaehlstellenCsvQuelle (Stub)
+│   ├── osm.py               OSM-Import aus Overpass-JSON (P+R, Straßen, Radnetz, Freiflächen, Bahn, Konfliktnutzungen)
+│   ├── gtfs.py              GTFS-Import (ZIP oder Verzeichnis): Haltestellen und Linien mit Takt je Tageszeit
+│   └── quelldateien.py      Quellenkatalog (echt/test getrennt), kommunale P+R-Liste, GeoJSON, Zählstellen
 ├── services/                Orchestrierung: räumliche Analyse (GeoPandas), Historie (pandas), Aggregation
 │   ├── flaechenfinder.py
 │   ├── monitoring.py
-│   └── wirkung.py
+│   ├── wirkung.py
+│   ├── datenbasis.py        Lädt alle Quellen je Gruppe (echt, test) fehlertolerant
+│   ├── kandidatenpipeline.py Freiflächen → Vorfilter → K.-o. → Status → Rohwerte, Ranking, Zwischennutzung
+│   ├── review.py            Review-Entscheidungen und Protokoll in SQLite
+│   └── datenlage.py         Datenlage-Bericht (Daten und Markdown)
+├── api_erweiterung.py       API der Erweiterung (/api/bestand, /api/netz/…, /api/kandidaten/…, /api/review, /api/datenlage)
+├── datenlage.py             Befehl python -m app.datenlage
 ├── konfiguration.py         Lädt config/einstellungen.yaml
 ├── main.py                  FastAPI: REST-API + Auslieferung der Oberfläche, Taktgeber für die Datenquelle
-└── static/                  index.html, app.js, styles.css, vendor/ (Offline-Kopien)
+└── static/                  index.html, app.js, erweiterung.js, styles.css, vendor/ (Offline-Kopien)
 config/einstellungen.yaml    Zentrale Konfiguration (Region, Gewichte, Schwellenwerte, Annahmen)
 data/frankfurt/              Testdaten als GeoJSON (EPSG:4326)
+data/frankfurt/quellen_test/ Testquellen im Originalformat (Overpass-JSON, GTFS-ZIP, CSV, GeoJSON)
+data/quellen/                Ablage für echte Quellen (gleiche Struktur, nicht im Repository)
 scripts/erzeuge_testdaten.py Generator der Testdaten
+scripts/erzeuge_quelltestdaten.py Generator der Testquellen im Originalformat
+scripts/hole_osm.py          Lädt einen echten OSM-Auszug der Region über die Overpass-API
 tests/                       pytest: Scoring, Wirtschaftlichkeit, Wirkung, Simulator, API
 ```
 
@@ -161,6 +183,89 @@ Vorgehen für einen neuen Adapter:
 3. Mit der vorhandenen Testsuite prüfen; die Domain-Tests bleiben gültig, weil die Fachlogik nur die
    Schnittstelle kennt.
 
+## Erweiterung: Bestand, Netz, Kandidaten
+
+### Echte und Testdaten getrennt
+
+Echte Quellen gehören nach `data/quellen/`, Testdaten liegen unter `data/frankfurt/quellen_test/`.
+Beide Verzeichnisse haben dieselbe Struktur (Dateinamen unter `quellen.dateien` in der Konfiguration):
+
+```
+osm/region.overpass.json        kommunal/pr_anlagen.csv (oder .geojson)
+gtfs/gtfs.zip (oder gtfs/*.txt) kommunal/liegenschaften.geojson
+umwelt/schutzgebiete.geojson    kommunal/bauleitplanung.geojson
+umwelt/wasserschutz.geojson     zaehlung/zaehlstellen.csv
+umwelt/altlasten.geojson        region/pendlerquellen.geojson, einfallachsen.geojson,
+umwelt/neigung.geojson                 sharing_stationen.geojson, stadtgebiet.geojson
+STAND.json (optional: Abrufdatum je Quelle, sonst Änderungsdatum der Datei)
+```
+
+Jede Quelle wird nur innerhalb ihrer Gruppe verwendet: Eine echte OSM-Anlage wird nie mit einer
+Test-Liste zusammengeführt, und Kandidaten aus echten Daten werden nur mit echten Umweltdaten geprüft.
+Alle Ergebnisse tragen die Kennung `testdaten`, Quelle und Abrufdatum. Mit `?testdaten=0` liefert
+jede Schnittstelle nur echte Daten; in der Oberfläche übernimmt das der Schalter „Testdaten anzeigen“.
+
+### Echte Daten einbinden
+
+1. **OSM** (P+R, Straßen, Radnetz, Freiflächen, Bahn, Wohnen/Schulen/Kitas/Parks):
+   `python scripts/hole_osm.py` auf einem Rechner mit Internetzugang. Es fragt die Overpass-API für das
+   Rechteck um die Stadtgrenze ab und schreibt `data/quellen/osm/region.overpass.json`. Alternativ den
+   Geofabrik-Auszug `hessen-latest.osm.pbf` mit osmium auf die Region zuschneiden und mit Overpass-kompatiblem
+   JSON (`out geom`) exportieren.
+2. **GTFS**: den RMV-Feed (oder einen bundesweiten Feed) als `data/quellen/gtfs/gtfs.zip` ablegen. Haltestellen
+   werden auf das Rechteck der Region beschränkt, `stop_times.txt` wird blockweise gelesen. Ausgewertet wird
+   ein Dienstag laut `calendar.txt`; `calendar_dates.txt` bleibt unberücksichtigt.
+3. **Kommunale P+R-Liste**: CSV mit `Name;Adresse;Stellplätze;Betreiber;Status;lat;lon` (Trennzeichen `;` oder `,`,
+   Zeilen mit `#` sind Kommentare) oder GeoJSON mit Punktgeometrie. Adressen werden nicht geokodiert; die Lage
+   muss als Koordinate vorliegen. Status-Texte wie „in Betrieb“, „in Planung“, „stillgelegt“ werden vereinheitlicht.
+4. **Liegenschaften** (`eigentum` öffentlich/privat, `baurecht` vorhanden/offen/nicht vorhanden,
+   `nutzung_bestaetigt`, `strom`, `wasser`): nur diese Merkmale übernehmen, **keine Eigentümernamen**.
+   Erst damit kann eine Fläche den Status „geprüft“ erreichen.
+5. **Bauleitplanung** (`verfahren`, `entwicklungsabsicht`, `entwicklung_ab` als Jahr) für den Zeithorizont der Zwischennutzung.
+6. **Umwelt** (HLNUG): Schutz- und Überschwemmungsgebiete, Wasserschutzzonen (`typ` = `wasserschutzgebiet_zone_1_2`
+   bzw. `_zone_3`), Altlastenverdachtsflächen (`typ` = `altlastenverdacht`), Neigung als Rasterpolygone mit `neigung_prozent`
+   (z. B. aus dem DGM abgeleitet).
+7. **Zählstellen** (Hessen Mobil): CSV `id;name;lat;lon;dtv_kfz`. Der Wert gilt für den nächsten Straßenabschnitt
+   (bis 60 m) und alle Abschnitte derselben Straße (gleiche `ref`, sonst gleicher Name).
+
+Danach Server neu starten und `python -m app.datenlage --ohne-testdaten` aufrufen, um zu prüfen, was erkannt wurde.
+
+### Kandidaten-Pipeline und Realismus-Status
+
+| Schritt | Regel (Konfiguration `kandidaten`) |
+|---|---|
+| Herkunft | `landuse=brownfield/greenfield/construction/vacant`, Parkplätze ohne P+R ab 5.000 m² |
+| Vorfilter | Mindestfläche 2.000 m², Neigung höchstens 6 %, Haltestelle höchstens 800 m Luftlinie; fehlende Daten erzeugen einen Hinweis statt eines Ausfalls |
+| K.-o. | Schutzgebiet, Überschwemmungsgebiet (ab 10 %), Wasserschutzzone I/II, Altlastenverdacht, Bahnanlage mit 20 m Sicherheitsabstand; Flächen bleiben in der Karte |
+| geprüft | Liegenschaftsdaten bestätigen Eigentum, Baurecht und Nutzung |
+| plausibel | Brache, Baufeld, Großparkplatz aus OSM oder Liegenschaftsdaten mit offenen Punkten |
+| hinweis | Grünland und ungenutzte Flächen ohne weitere Belege, oder kein Baurecht; nur Karte, nie Ranking |
+| Review | „geprüft“ → geprüft, „verworfen“ → hinweis, „offen“ → automatischer Status; jede Änderung im Protokoll |
+
+Für das P+R-Ranking werden dieselben Indikatoren, Schwellenwerte und Profile wie im Flächenfinder verwendet.
+Investition, Versiegelung und Naturnähe sind Annahmen je Flächentyp (`kandidaten.osm_typen`).
+
+### Zwischennutzung
+
+Bewertung 0–100 aus Zeithorizont (20 %), Erschließung (20 %), Bodenzustand (15 %), Lage (15 %),
+Nutzungskonflikte (15 %), Rückbaubarkeit (5 %) und Kosten (10 %). Fehlende Angaben (z. B. Strom unbekannt)
+gehen mit 50 Punkten ein und sind im Steckbrief als „Annahme“ markiert. Die Empfehlung wählt den ersten
+passenden Typ in der Reihenfolge Baustellenlogistik, P+R-Provisorium, Mobilitätsstation, Sharing-Hub.
+Herrichtungskosten je Stellplatz: befestigt 300 €, teilbefestigt 1.200 €, unbefestigt 2.500 €
+(Bandbreite × 1,4 / × 1,0 / × 0,75).
+
+### Review
+
+Entscheidungen liegen in `data/review.sqlite` (per `PR_REVIEW_DB` änderbar) mit Tabellen `entscheidung` und
+`protokoll`. Sie bleiben nach einem Neustart erhalten. Export unter „Review-Liste als CSV“ bzw. `/api/review/export.csv`.
+
+### Kartenleistung
+
+Die Netzkarte zeichnet alle Vektorebenen auf Canvas, fasst Haltestellen mit Leaflet.markercluster zusammen und
+blendet Nebenstraßen erst ab Zoomstufe 13 ein. Mit den Testdaten (rund 6.600 Elemente, davon 5.200 Straßenabschnitte)
+gemessen in Chromium ohne Grafikbeschleunigung: Laden und Zeichnen 1,5 s, Verschieben mit der Maus 56 Bilder/s,
+Zoomwechsel etwa 140 ms.
+
 ## Datenschutz
 
 Es werden ausschließlich **anonyme, aggregierte Zählwerte** verarbeitet (Belegung, Ein-/Ausfahrten,
@@ -200,8 +305,10 @@ Formeln (auch im Dashboard unter „Herleitung“ sichtbar):
 ## Was ist Stub?
 
 - `SensorQuelle`, `GbfsQuelle`, `ParkautomatQuelle` (Monitoring), `GtfsHaltestellenQuelle`,
-  `GbfsStationsQuelle` (Geodaten), `ZaehlstellenCsvQuelle` (Wirkung): Klassen mit dokumentierter
-  Schnittstelle, werfen `NotImplementedError`.
+  `GbfsStationsQuelle` (Geodaten des Flächenfinders), `ZaehlstellenCsvQuelle` (Wirkung): Klassen mit dokumentierter
+  Schnittstelle, werfen `NotImplementedError`. Der GTFS-Import der Erweiterung (`adapters/gtfs.py`) ist dagegen
+  vollständig umgesetzt.
+- Echte OSM-, GTFS- und kommunale Daten sind nicht enthalten; die Importer sind mit Testquellen im Originalformat geprüft.
 - Region `rhein_main`: in der Konfiguration angelegt, Datenverzeichnis noch leer.
 - Das Korridormodell nutzt Luftlinien; eine Umlegung auf das Straßennetz (z. B. mit OSM-Routing) ist nicht enthalten.
 

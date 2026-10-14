@@ -1,0 +1,19 @@
+{
+  "hinweis": "Testdaten – synthetisch erzeugt mit scripts/erzeuge_quelltestdaten.py",
+  "abrufdatum": {
+    "osm": "2026-10-01",
+    "gtfs": "2026-10-01",
+    "kommunal_pr": "2026-10-01",
+    "liegenschaften": "2026-10-01",
+    "bauleitplanung": "2026-10-01",
+    "schutzgebiete": "2026-10-01",
+    "wasserschutz": "2026-10-01",
+    "altlasten": "2026-10-01",
+    "neigung": "2026-10-01",
+    "zaehlstellen": "2026-10-01",
+    "pendlerquellen": "2026-10-01",
+    "einfallachsen": "2026-10-01",
+    "sharing_stationen": "2026-10-01",
+    "stadtgebiet": "2026-10-01"
+  }
+}

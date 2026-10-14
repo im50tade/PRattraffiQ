@@ -5,3 +5,5 @@ __pycache__/
 data/historie/
 data/befragungen.json
 demo/
+data/review.sqlite
+berichte/

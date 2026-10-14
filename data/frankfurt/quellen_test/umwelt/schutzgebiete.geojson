@@ -1,0 +1,213 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SG1",
+    "name": "Testschutzgebiet Süd",
+    "typ": "schutzgebiet",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.603,
+       50.071
+      ],
+      [
+       8.628,
+       50.071
+      ],
+      [
+       8.63,
+       50.082
+      ],
+      [
+       8.605,
+       50.083
+      ],
+      [
+       8.603,
+       50.071
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SG2",
+    "name": "Testschutzgebiet Nord",
+    "typ": "schutzgebiet",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.655,
+       50.206
+      ],
+      [
+       8.684,
+       50.204
+      ],
+      [
+       8.688,
+       50.222
+      ],
+      [
+       8.66,
+       50.225
+      ],
+      [
+       8.655,
+       50.206
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "UG1",
+    "name": "Test-Überschwemmungsgebiet Main West",
+    "typ": "ueberschwemmungsgebiet",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.544406,
+       50.100216
+      ],
+      [
+       8.545294,
+       50.10024
+      ],
+      [
+       8.599967,
+       50.097258
+      ],
+      [
+       8.644641,
+       50.100237
+      ],
+      [
+       8.645359,
+       50.095763
+      ],
+      [
+       8.600033,
+       50.092752
+      ],
+      [
+       8.545152,
+       50.095735
+      ],
+      [
+       8.500596,
+       50.090784
+      ],
+      [
+       8.499404,
+       50.095216
+      ],
+      [
+       8.544406,
+       50.100216
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "UG2",
+    "name": "Test-Überschwemmungsgebiet Main Ost",
+    "typ": "ueberschwemmungsgebiet",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.798568,
+       50.117132
+      ],
+      [
+       8.827853,
+       50.131775
+      ],
+      [
+       8.828465,
+       50.13202
+      ],
+      [
+       8.829496,
+       50.132225
+      ],
+      [
+       8.830216,
+       50.132244
+      ],
+      [
+       8.880218,
+       50.130244
+      ],
+      [
+       8.915463,
+       50.127229
+      ],
+      [
+       8.914537,
+       50.122771
+      ],
+      [
+       8.87966,
+       50.125761
+      ],
+      [
+       8.831103,
+       50.127703
+      ],
+      [
+       8.802147,
+       50.113225
+      ],
+      [
+       8.801547,
+       50.112984
+      ],
+      [
+       8.800537,
+       50.112778
+      ],
+      [
+       8.770538,
+       50.109778
+      ],
+      [
+       8.769462,
+       50.114222
+      ],
+      [
+       8.798568,
+       50.117132
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

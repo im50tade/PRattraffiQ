@@ -1,0 +1,277 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G01",
+    "name": "Bad Homburg v. d. Höhe",
+    "einpendler": 9000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.618,
+     50.227
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G02",
+    "name": "Oberursel (Taunus)",
+    "einpendler": 7000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.577,
+     50.204
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G03",
+    "name": "Friedberg (Hessen)",
+    "einpendler": 6000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.755,
+     50.335
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G04",
+    "name": "Usingen",
+    "einpendler": 3000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.537,
+     50.335
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G05",
+    "name": "Bad Vilbel",
+    "einpendler": 6500,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.736,
+     50.179
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G06",
+    "name": "Maintal",
+    "einpendler": 5000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.84,
+     50.15
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G07",
+    "name": "Hanau",
+    "einpendler": 9000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.917,
+     50.133
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G08",
+    "name": "Gelnhausen",
+    "einpendler": 3500,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     9.19,
+     50.202
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G09",
+    "name": "Offenbach am Main",
+    "einpendler": 14000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.766,
+     50.101
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G10",
+    "name": "Neu-Isenburg",
+    "einpendler": 6000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.696,
+     50.053
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G11",
+    "name": "Langen (Hessen)",
+    "einpendler": 4500,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.668,
+     49.99
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G12",
+    "name": "Darmstadt",
+    "einpendler": 9000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.65,
+     49.872
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G13",
+    "name": "Rüsselsheim am Main",
+    "einpendler": 5000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.412,
+     49.99
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G14",
+    "name": "Hofheim am Taunus",
+    "einpendler": 5500,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.447,
+     50.087
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G15",
+    "name": "Wiesbaden",
+    "einpendler": 8000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.24,
+     50.082
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G16",
+    "name": "Eschborn",
+    "einpendler": 4000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.57,
+     50.143
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "G17",
+    "name": "Kronberg im Taunus",
+    "einpendler": 3000,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.505,
+     50.18
+    ]
+   }
+  }
+ ]
+}

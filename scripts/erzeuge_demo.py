@@ -34,6 +34,10 @@ from app.adapters.zaehlreihen import ZaehlreihenSimulator  # noqa: E402
 from app.services.flaechenfinder import Flaechenfinder  # noqa: E402
 from app.services.monitoring import MonitoringDienst  # noqa: E402
 from app.services.wirkung import WirkungsDienst  # noqa: E402
+from app import api_erweiterung  # noqa: E402
+from app.domain import scoring as sc  # noqa: E402
+from app.domain import zwischennutzung as zn  # noqa: E402
+from app.services import datenlage  # noqa: E402
 
 STATIC = WURZEL / "app" / "static"
 ZIEL = WURZEL / "demo" / "pr_flaechenfinder_demo.html"
@@ -84,6 +88,7 @@ def daten_erzeugen() -> dict:
             zeitreihen.append({sid: {f: monitoring.zeitreihe(sid, f) for f in ("tag", "woche")} for sid in [*standorte, "gesamt"]})
 
     return _runden({
+        "erweiterung": erweiterung_erzeugen(),
         "erzeugt": datetime.now().isoformat(timespec="minutes"),
         "konfiguration": main.konfiguration(),
         "layer": {name: finder.layer_geojson(name) for name in LAYER},
@@ -95,6 +100,50 @@ def daten_erzeugen() -> dict:
         "querschnittsfaktor": mon_konf["wirkung"]["querschnittsfahrten_je_verlagerter_fahrt"],
         "standard_verlagerungsanteil": mon_konf["wirkung"]["verlagerungsanteil"],
     })
+
+
+def _anfrage(query: str = ""):
+    from starlette.requests import Request
+    return Request({"type": "http", "method": "GET", "path": "/", "query_string": query.encode(), "headers": []})
+
+
+def erweiterung_erzeugen() -> dict:
+    """Vorberechnung der Erweiterung (Netz, Bestand, Kandidaten, Zwischennutzung, Datenlage)."""
+    import os
+    import tempfile
+    os.environ["PR_REVIEW_DB"] = str(Path(tempfile.mkdtemp()) / "demo_review.sqlite")   # Demo startet ohne Entscheidungen
+    api_erweiterung.initialisiere()
+    z = api_erweiterung.zustand
+    k = konf.gesamt()
+    leer = _anfrage()
+    kandidaten = {kid: {**z.pipeline.kandidat(kid), "protokoll": []} for kid in z.pipeline.basis}
+    standard = k["bewertung"]["profile"]["ausgewogen"]["gewichte"]
+    teilscores = {kid: {i: t.score for i, t in sc.bewerte_flaeche(x["rohwerte"], k["bewertung"]["indikatoren"], standard).teilscores.items()}
+                  for kid, x in kandidaten.items()}
+    zwk, kk = k["zwischennutzung"], k["kandidaten"]
+    zwischen = []
+    for x in kandidaten.values():   # alle Flächen ohne K.-o.; der Status wird im Browser je Review angewendet
+        if x["ausschlussgruende"] or x["flaeche_m2"] < kk["mindestflaeche_m2"]:
+            continue
+        m = x["merkmale"]
+        bew = zn.bewerte(m, zwk)
+        zwischen.append({"id": x["id"], "name": x["name"], "testdaten": x["testdaten"], "typ_label": x["typ_label"], "quelle": x["quelle"],
+                         "abrufdatum": x["abrufdatum"], "flaeche_m2": x["flaeche_m2"], "stellplaetze": m["stellplaetze"], "bewertung": bew,
+                         "gesamtscore": bew["gesamtscore"], "empfehlung": zn.empfehlung(m, zwk["typen"]),
+                         "zeitrahmen": zn.zeitrahmen(m["jahre_bis_entwicklung"], zwk["max_zeitrahmen_jahre"]),
+                         "kosten": zn.kosten(m["stellplaetze"], m["befestigung"], zwk), "merkmale": m, "bauleitplanung": x["bauleitplanung"]})
+    bericht = datenlage.erstelle(z.datenbasis, z.pipeline, k)
+    nur_echt = {**bericht, "gruppen": {g: v for g, v in bericht["gruppen"].items() if g != "test"}}
+    return {
+        "konfiguration": api_erweiterung.konfiguration(),
+        "bestand": api_erweiterung.bestand(leer),
+        "bestand_steckbriefe": {b["id"]: api_erweiterung.bestand_steckbrief(b["id"]) for g in z.datenbasis.gruppen.values() for b in g.pr_bestand},
+        "strassen": api_erweiterung.strassen(leer), "radnetz": api_erweiterung.radnetz(leer),
+        "haltestellen": api_erweiterung.haltestellen(leer), "linien": api_erweiterung.linien(leer),
+        "karte": z.pipeline.geojson(True), "kandidaten": kandidaten, "teilscores": teilscores, "zwischennutzung": zwischen,
+        "datenlage": {**bericht, "markdown": datenlage.als_markdown(bericht)},
+        "datenlage_echt": {**nur_echt, "markdown": datenlage.als_markdown(nur_echt)},
+    }
 
 
 ZWISCHENSCHICHT = r"""
@@ -206,6 +255,68 @@ window.PR_DEMO = true;
     return w;
   }
 
+  // ---------------------------------------------------------------- Erweiterung: Kandidaten mit Review in dieser Sitzung
+  const E = D.erweiterung;
+  const REVIEW = {};
+  const PROTOKOLL = [];
+  function kStatus(k) {
+    const r = REVIEW[k.id];
+    if (!r || r.entscheidung === "offen") return k.status_automatisch;
+    const z = r.kommentar ? `: ${r.kommentar}` : "";
+    return r.entscheidung === "geprüft" ? ["geprüft", `Im Review bestätigt (${r.geaendert_am})${z}`] : ["hinweis", `Im Review verworfen (${r.geaendert_am})${z}`];
+  }
+  function kAlle(ohneTest) {
+    return Object.values(E.kandidaten).filter((k) => !(ohneTest && k.testdaten)).map((k) => {
+      const [status, grund] = kStatus(k);
+      return { ...k, status, status_begruendung: grund, review: REVIEW[k.id] || null,
+        im_ranking: ["geprüft", "plausibel"].includes(status) && !k.ausschlussgruende.length && !k.vorfilter.nicht_bestanden.length };
+    });
+  }
+  function kandRanking(q, ohneTest) {
+    const g = gewichte(q);
+    const alle = kAlle(ohneTest);
+    const ranking = alle.filter((k) => k.im_ranking).map((k) => ({
+      id: k.id, name: k.name, teilscores: E.teilscores[k.id], ausschlussgruende: [], status: k.status, testdaten: k.testdaten,
+      gesamtscore: r1(IND.reduce((a, x) => a + E.teilscores[k.id][x] * g[x], 0)), quelle: k.quelle, abrufdatum: k.abrufdatum,
+      typ_label: k.typ_label, flaeche_m2: k.flaeche_m2, stellplaetze: k.stellplaetze, gebietshinweise: k.gebietshinweise,
+    })).sort((a, b) => b.gesamtscore - a.gesamtscore || (a.id < b.id ? -1 : 1));
+    ranking.forEach((e, i) => { e.rang = i + 1; });
+    const nicht = alle.filter((k) => !k.im_ranking).map((k) => ({
+      id: k.id, name: k.name, status: k.status, testdaten: k.testdaten,
+      grund: (k.ausschlussgruende.length ? k.ausschlussgruende : k.vorfilter.nicht_bestanden.length ? k.vorfilter.nicht_bestanden : [`Realismus-Status ${k.status}: ${k.status_begruendung}`]).join("; "),
+      art: k.ausschlussgruende.length ? "ausgeschlossen" : (k.vorfilter.nicht_bestanden.length ? "vorfilter" : "nur_karte"),
+    }));
+    return { ranking, nicht_im_ranking: nicht };
+  }
+  function znListe(ohneTest) {
+    const status = Object.fromEntries(kAlle(ohneTest).map((k) => [k.id, k.status]));
+    const ranking = E.zwischennutzung.filter((e) => status[e.id] && status[e.id] !== "hinweis").map((e) => ({ ...kopie(e), status: status[e.id] }))
+      .sort((a, b) => b.gesamtscore - a.gesamtscore || (a.id < b.id ? -1 : 1));
+    ranking.forEach((e, i) => { e.rang = i + 1; });
+    return { ranking, ausgeschlossen: [] };
+  }
+  function kandKarte(q, ohneTest) {
+    const alle = Object.fromEntries(kAlle(ohneTest).map((k) => [k.id, k]));
+    const rang = Object.fromEntries(kandRanking(q, ohneTest).ranking.map((e) => [e.id, e]));
+    const zw = Object.fromEntries(znListe(ohneTest).ranking.map((e) => [e.id, e]));
+    return { type: "FeatureCollection", features: E.karte.features.filter((f) => alle[f.properties.id]).map((f) => {
+      const k = alle[f.properties.id];
+      return { ...f, properties: { ...f.properties, status: k.status, status_begruendung: k.status_begruendung, im_ranking: k.im_ranking,
+        rang: rang[k.id]?.rang ?? null, gesamtscore: rang[k.id]?.gesamtscore ?? null,
+        zwischennutzung: zw[k.id]?.empfehlung.label ?? null, zwischennutzung_score: zw[k.id]?.gesamtscore ?? null } };
+    }) };
+  }
+  function kDetail(id) {
+    const k = kAlle(false).find((x) => x.id === id);
+    return k ? { ...k, protokoll: PROTOKOLL.filter((p) => p.kandidat_id === id) } : null;
+  }
+  function reviewListe(ohneTest) {
+    return { protokoll: PROTOKOLL, eintraege: kAlle(ohneTest).map((k) => ({
+      kandidat_id: k.id, name: k.name, entscheidung: k.review?.entscheidung || "offen", kommentar: k.review?.kommentar || "",
+      geaendert_am: k.review?.geaendert_am || "", realismus_status: k.status, status_begruendung: k.status_begruendung,
+      quelle: k.quelle, abrufdatum: k.abrufdatum, testdaten: k.testdaten ? "ja" : "nein" })) };
+  }
+
   // ---------------------------------------------------------------- Routen
   const antwort = (daten, status = 200) => Promise.resolve(new Response(JSON.stringify(daten), { status, headers: { "Content-Type": "application/json" } }));
   const fehler = (text, status = 422) => antwort({ detail: text }, status);
@@ -255,6 +366,39 @@ window.PR_DEMO = true;
           erhebungszeitraum: (body.erhebungszeitraum || "").trim(), quelle: "Befragung (Eingabe, nur in dieser Sitzung)" };
         return antwort(zustand.befragung[m[1]]);
       }
+      if (E) {
+        const ohneTest = q.get("testdaten") === "0";
+        const filt = (fc) => ({ type: "FeatureCollection", features: ohneTest ? fc.features.filter((f) => !f.properties.testdaten) : fc.features });
+        const netz = { "/api/bestand": "bestand", "/api/netz/strassen": "strassen", "/api/netz/radnetz": "radnetz", "/api/netz/haltestellen": "haltestellen", "/api/netz/linien": "linien" };
+        if (pfad === "/api/erweiterung/konfiguration") return antwort(E.konfiguration);
+        if (netz[pfad]) return antwort(filt(E[netz[pfad]]));
+        if ((m = pfad.match(/^\/api\/bestand\/(.+)\/steckbrief$/))) {
+          const b = E.bestand_steckbriefe[decodeURIComponent(m[1])];
+          return b ? antwort(b) : fehler("Anlage nicht gefunden", 404);
+        }
+        if (pfad === "/api/kandidaten/ranking") return antwort(kandRanking(q, ohneTest));
+        if (pfad === "/api/kandidaten/karte") return antwort(kandKarte(q, ohneTest));
+        if ((m = pfad.match(/^\/api\/kandidaten\/(.+)$/))) {
+          const k = kDetail(decodeURIComponent(m[1]));
+          return k ? antwort(k) : fehler("Kandidat nicht gefunden", 404);
+        }
+        if (pfad === "/api/zwischennutzung") return antwort(znListe(ohneTest));
+        if ((m = pfad.match(/^\/api\/review\/(.+)$/)) && methode === "PUT") {
+          const id = decodeURIComponent(m[1]);
+          const k = E.kandidaten[id];
+          if (!k) return fehler("Kandidat nicht gefunden", 404);
+          if (!["geprüft", "verworfen", "offen"].includes(body.entscheidung)) return fehler("Entscheidung muss geprüft, verworfen oder offen sein");
+          const alt = kStatus(k)[0];
+          const vorher = REVIEW[id]?.entscheidung || null;
+          const jetzt = new Date().toISOString().slice(0, 19);
+          REVIEW[id] = { kandidat_id: id, entscheidung: body.entscheidung, kommentar: (body.kommentar || "").trim(), geaendert_am: jetzt };
+          PROTOKOLL.unshift({ nr: PROTOKOLL.length + 1, kandidat_id: id, zeitpunkt: jetzt, entscheidung_alt: vorher, entscheidung_neu: body.entscheidung,
+            status_alt: alt, status_neu: kStatus(k)[0], kommentar: REVIEW[id].kommentar });
+          return antwort(kDetail(id));
+        }
+        if (pfad === "/api/review") return antwort(reviewListe(ohneTest));
+        if (pfad === "/api/datenlage") return antwort(ohneTest ? E.datenlage_echt : E.datenlage);
+      }
       if ((m = pfad.match(/^\/api\/wirkung\/(\w+)$/))) {
         const w = wirkung(m[1]);
         return w ? antwort(w) : fehler(`Standort '${m[1]}' nicht gefunden`, 404);
@@ -278,7 +422,7 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 DEMO_HINWEIS = """<p class="hinweis demo-hinweis" id="demo-hinweis"><strong>Demo-Ansicht.</strong> Alle Werte wurden am {erzeugt} mit dem
 Python-Backend vorberechnet und laufen hier ohne Server. Gewichtung, Ranking, Steckbriefe und Vergleich sind voll interaktiv.
 Das Monitoring spielt einen simulierten Tag ab (Zeitraffer, Intervall und Pause wirken; die Wettervorgabe nur in der vollständigen Version).
-Befragungsergebnisse gelten nur für diese Sitzung. Hintergrundkarte und Dateiexport gibt es nur in der vollständigen Version.</p>"""
+Befragungsergebnisse und Review-Entscheidungen gelten nur für diese Sitzung. Hintergrundkarte und Dateiexport gibt es nur in der vollständigen Version.</p>"""
 
 
 def html_erzeugen(daten: dict) -> str:
@@ -293,11 +437,14 @@ def html_erzeugen(daten: dict) -> str:
     leaflet_css = (STATIC / "vendor" / "leaflet" / "leaflet.css").read_text(encoding="utf-8")
     styles = (STATIC / "styles.css").read_text(encoding="utf-8")
     app_js = (STATIC / "app.js").read_text(encoding="utf-8")
+    erweiterung_js = (STATIC / "erweiterung.js").read_text(encoding="utf-8")
+    cluster_css = "\n".join((STATIC / "vendor" / "markercluster" / n).read_text(encoding="utf-8") for n in ("MarkerCluster.css", "MarkerCluster.Default.css"))
     daten_json = json.dumps(daten, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     return f"""<title>P+R Flächenfinder Rhein-Main</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 {leaflet_css}
+{cluster_css}
 {styles}
 {DEMO_CSS}
 </style>
@@ -305,9 +452,13 @@ def html_erzeugen(daten: dict) -> str:
 <script id="demo-daten" type="application/json">{daten_json}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>{ZWISCHENSCHICHT}</script>
 <script>
 {app_js}
+</script>
+<script>
+{erweiterung_js}
 </script>
 """
 

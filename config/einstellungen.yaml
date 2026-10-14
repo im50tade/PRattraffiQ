@@ -77,6 +77,12 @@ bewertung:
       wasserschutzgebiet_zone_3:
         label: "Wasserschutzgebiet Zone III"
         hinweis_ab_anteil: 0.0
+      altlastenverdacht:              # Kandidaten-Pipeline und Zwischennutzung
+        label: "Altlastenverdachtsfläche"
+        ko_ab_anteil: 0.0
+      bahnanlage:                     # Bahnanlage einschließlich Sicherheitsabstand (kandidaten.bahn_sicherheitsabstand_m)
+        label: "Bahnanlage mit Sicherheitsabstand"
+        ko_ab_anteil: 0.0
 
   indikatoren:
     nachfrage:
@@ -143,6 +149,7 @@ bewertung:
           kategorien:
             öffentlich: 100
             privat: 30
+            ungeklärt: 50             # Eigentum nicht aus Quelldaten bekannt (Kandidaten-Pipeline)
           anteil: 0.4
     kosten:
       label: "Kosten"
@@ -286,3 +293,110 @@ monitoring:
     vorher_tage: 60                   # Kalendertage vor Eröffnung
     max_nachher_tage: 180             # höchstens so viele Kalendertage nach Eröffnung
     hochlauf_tage: 45                 # Zeitkonstante, bis sich die Nutzung eingespielt hat
+
+# ============================================================================ Datenquellen (Erweiterung Bestand, Netz, Kandidaten)
+quellen:
+  # Echte Daten werden hier abgelegt (relativ zum Projekt). Fehlende Dateien sind erlaubt;
+  # der Datenlage-Bericht weist sie aus. Testdaten liegen getrennt und werden nie mit echten vermischt.
+  echt_verzeichnis: "data/quellen"
+  test_verzeichnis: "data/frankfurt/quellen_test"
+  dateien:
+    osm: "osm/region.overpass.json"           # Overpass-JSON (scripts/hole_osm.py) – P+R, Straßen, Radnetz, Freiflächen, Bahn
+    gtfs: "gtfs/gtfs.zip"                      # GTFS-Feed als ZIP oder entpacktes Verzeichnis "gtfs/"
+    kommunal_pr: "kommunal/pr_anlagen.csv"     # alternativ .geojson; Felder Name, Adresse, Stellplätze, Betreiber, Status, lat, lon
+    liegenschaften: "kommunal/liegenschaften.geojson"   # Eigentum, Baurecht, Nutzung bestätigt, Strom, Wasser
+    bauleitplanung: "kommunal/bauleitplanung.geojson"   # Entwicklungsabsicht, Entwicklung ab (Jahr), Verfahren
+    schutzgebiete: "umwelt/schutzgebiete.geojson"       # typ wie bewertung.ausschluss.gebietstypen
+    wasserschutz: "umwelt/wasserschutz.geojson"
+    altlasten: "umwelt/altlasten.geojson"
+    neigung: "umwelt/neigung.geojson"                   # Rasterzellen mit neigung_prozent
+    zaehlstellen: "zaehlung/zaehlstellen.csv"           # id, name, lat, lon, dtv_kfz
+    pendlerquellen: "region/pendlerquellen.geojson"     # Herkunftsgemeinden mit Einpendlern (Korridormodell)
+    einfallachsen: "region/einfallachsen.geojson"       # Achsen mit dtv_kfz
+    sharing_stationen: "region/sharing_stationen.geojson"
+    stadtgebiet: "region/stadtgebiet.geojson"           # Stadtgrenze und Zentrum
+  testdaten_anzeigen: true                              # Standard des Schalters „Testdaten anzeigen“
+
+bestand:
+  zusammenfuehrung_m: 30            # OSM- und kommunale Anlage gelten bis zu diesem Abstand als dieselbe Anlage
+  abweichung_stellplaetze_anteil: 0.10   # ab 10 % Differenz der Stellplätze wird eine Abweichung markiert
+  haltestellen_im_umkreis_m: 800
+
+netz:
+  stichtag_wochentag: "dienstag"    # Werktag, an dem Fahrten aus dem GTFS gezählt werden
+  tageszeiten:
+    hvz_frueh: {label: "Hauptverkehrszeit früh (6–9 Uhr)", von: 6, bis: 9}
+    nvz: {label: "Normalverkehrszeit (9–15 Uhr)", von: 9, bis: 15}
+    hvz_spaet: {label: "Hauptverkehrszeit spät (15–19 Uhr)", von: 15, bis: 19}
+    svz: {label: "Schwachverkehrszeit (19–23 Uhr)", von: 19, bis: 23}
+  standard_tageszeit: hvz_frueh
+  strassen_mindestzoom:             # maßstabsabhängige Darstellung (Generalisierung)
+    Autobahn: 0
+    Bundesstraße: 0
+    Hauptstraße: 11
+    Nebenstraße: 13
+  zaehlstelle_zuordnung_m: 60       # Zählstelle wird dem nächsten Straßenabschnitt bis zu diesem Abstand zugeordnet
+
+kandidaten:
+  mindestflaeche_m2: 2000
+  max_neigung_prozent: 6
+  max_haltestellendistanz_m: 800
+  parkplatz_mindestflaeche_m2: 5000          # "große" amenity=parking
+  bahn_sicherheitsabstand_m: 20
+  osm_typen:
+    # landuse bzw. amenity → Annahmen für Versiegelung, Naturnähe, Investition und Befestigung
+    brownfield:   {label: "Brache", versiegelung: 70, naturnaehe: 10, investition_je_stellplatz: 4500, befestigung: "teilbefestigt", status_ohne_liegenschaft: plausibel}
+    construction: {label: "Baufeld", versiegelung: 50, naturnaehe: 5, investition_je_stellplatz: 5000, befestigung: "teilbefestigt", status_ohne_liegenschaft: plausibel}
+    parking:      {label: "Großparkplatz", versiegelung: 100, naturnaehe: 0, investition_je_stellplatz: 3000, befestigung: "befestigt", status_ohne_liegenschaft: plausibel}
+    greenfield:   {label: "Grünland (Bauerwartung)", versiegelung: 0, naturnaehe: 60, investition_je_stellplatz: 6500, befestigung: "unbefestigt", status_ohne_liegenschaft: hinweis}
+    vacant:       {label: "Freifläche ungenutzt", versiegelung: 30, naturnaehe: 30, investition_je_stellplatz: 5500, befestigung: "unbefestigt", status_ohne_liegenschaft: hinweis}
+
+zwischennutzung:
+  max_zeitrahmen_jahre: 5
+  gewichte: {zeithorizont: 20, erschliessung: 20, bodenzustand: 15, lage: 15, nutzungskonflikte: 15, rueckbaubarkeit: 5, kosten: 10}
+  schwellen:
+    zeithorizont_jahre: {min: 0.5, max: 5}              # verfügbare Jahre bis zur geplanten Entwicklung
+    zufahrt_m: {min: 0, max: 300, invertiert: true}      # Abstand zur nächsten Straße
+    oev_abfahrten_je_stunde: {min: 0, max: 12}
+    distanz_achse_m: {min: 0, max: 3000, invertiert: true}
+    konfliktabstand_m: {min: 0, max: 300}                # Abstand zu Wohnen, Schule, Kita, Schutzgrün
+    kosten_je_stellplatz_eur: {min: 200, max: 3000, invertiert: true}
+  befestigung:
+    # Herrichtungskosten je Stellplatz und Rückbaubarkeit (0–100) nach Ausgangszustand
+    befestigt:     {kosten_je_stellplatz: 300, rueckbaubarkeit: 100, punkte: 100}
+    teilbefestigt: {kosten_je_stellplatz: 1200, rueckbaubarkeit: 70, punkte: 60}
+    unbefestigt:   {kosten_je_stellplatz: 2500, rueckbaubarkeit: 30, punkte: 20}
+  unbekannt_punkte: 50              # Teilbewertung, wenn eine Information fehlt (wird im Steckbrief ausgewiesen)
+  kostenbandbreite: {konservativ: 1.4, realistisch: 1.0, optimistisch: 0.75}
+  typen:
+    # Reihenfolge = Priorität; der erste Typ, dessen Bedingungen alle erfüllt sind, wird empfohlen
+    baustellenlogistik:
+      label: "Baustellenlogistik"
+      nutzen: "Lager- und Logistikfläche für die anstehende Bebauung der Fläche oder ihres Umfelds"
+      bedingungen:
+        - {kennwert: jahre_bis_entwicklung, operator: "<=", wert: 1.5}
+        - {kennwert: zufahrt_m, operator: "<=", wert: 100}
+    pr_provisorium:
+      label: "P+R-Provisorium"
+      nutzen: "Temporäre P+R-Anlage bis zur endgültigen Nutzung"
+      bedingungen:
+        - {kennwert: flaeche_m2, operator: ">=", wert: 3000}
+        - {kennwert: distanz_achse_m, operator: "<=", wert: 2000}
+        - {kennwert: oev_abfahrten_je_stunde, operator: ">=", wert: 4}
+    mobilitaetsstation:
+      label: "Mobilitätsstation"
+      nutzen: "Sharing, Fahrradparken und Ladepunkte an einem gut angebundenen Haltepunkt"
+      bedingungen:
+        - {kennwert: oev_abfahrten_je_stunde, operator: ">=", wert: 6}
+    sharing_hub:
+      label: "Sharing-Hub"
+      nutzen: "Abstellfläche für Bike-, E-Scooter- und Carsharing-Flotten"
+      bedingungen:
+        - {kennwert: flaeche_m2, operator: ">=", wert: 0}
+
+review:
+  datei: "data/review.sqlite"       # per Umgebungsvariable PR_REVIEW_DB änderbar
+
+datenlage:
+  ausgabe: "berichte/datenlage.md"
+  groessenklassen_m2: [2000, 5000, 10000, 20000]

@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from . import konfiguration as konf
 from .adapters.geodaten import GbfsStationsQuelle, GeoJsonQuelle, GtfsHaltestellenQuelle
+from . import api_erweiterung
 from .adapters.zaehlreihen import ZaehlreihenSimulator, ZaehlstellenCsvQuelle
 from .domain.scoring import INDIKATOREN
 from .services.flaechenfinder import Flaechenfinder
@@ -54,6 +55,7 @@ def initialisiere() -> None:
         ZaehlreihenSimulator(mon["wirkungsdaten"], mon["wirkung"]["verlagerungsanteil"], mon["simulator"]["zufallssaat"]),
         mon, zustand.monitoring,
     )
+    api_erweiterung.initialisiere()
 
 
 async def _taktgeber() -> None:
@@ -78,6 +80,7 @@ async def lebenszyklus(_: FastAPI):
 app = FastAPI(title="P+R Flächenfinder Rhein-Main", version="0.1.0", lifespan=lebenszyklus,
               description="Prototyp mit synthetischen Testdaten für Frankfurt am Main")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+app.include_router(api_erweiterung.router)
 
 
 @app.exception_handler(KeyError)
