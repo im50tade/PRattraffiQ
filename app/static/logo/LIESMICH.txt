@@ -1,0 +1,2 @@
+Hier die Logodatei traffiq_logo.svg ablegen (Pfad siehe config/traffiq_theme.yaml, logo.datei).
+Bis dahin zeigt die Oberfläche ein Textlogo.

@@ -6,6 +6,33 @@
 // Demo-Ansicht (scripts/erzeuge_demo.py): vorberechnete Daten, ohne Hintergrundkarte und Dateiexport
 const DEMO = window.PR_DEMO === true;
 
+// ====================================================================== Theme
+// Alle Farben stammen aus config/traffiq_theme.yaml; der Server liefert sie als CSS-Variablen (/theme.css).
+const T = (name) => getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+const SERIE = (i) => T(`chart-${(i % (Number(T("chart-anzahl")) || 1)) + 1}`);
+function rgbVon(farbe) {
+  const h = farbe.replace("#", "");
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+}
+/** Mischt eine Theme-Farbe mit dem Hintergrund (Anteil 0–1 der Farbe). */
+function toenung(farbe, anteil) {
+  const a = rgbVon(farbe);
+  const b = rgbVon(T("basis-hintergrund"));
+  return `rgb(${a.map((v, k) => Math.round(v * anteil + b[k] * (1 - anteil))).join(",")})`;
+}
+function leuchtdichte(rgb) {
+  const k = rgb.map((c) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * k[0] + 0.7152 * k[1] + 0.0722 * k[2];
+}
+/** Wählt Textfarbe oder Hintergrundfarbe des Themes, je nachdem, was auf der Fläche stärker kontrastiert. */
+function lesbarAuf(rgbText) {
+  const zahlen = rgbText.match(/\d+/g).map(Number);
+  const l = leuchtdichte(zahlen);
+  const kText = (Math.max(l, leuchtdichte(rgbVon(T("basis-text")))) + 0.05) / (Math.min(l, leuchtdichte(rgbVon(T("basis-text")))) + 0.05);
+  const kHell = (Math.max(l, leuchtdichte(rgbVon(T("basis-hintergrund")))) + 0.05) / (Math.min(l, leuchtdichte(rgbVon(T("basis-hintergrund")))) + 0.05);
+  return kText >= kHell ? T("basis-text") : T("basis-hintergrund");
+}
+
 // ====================================================================== Hilfsfunktionen
 const $ = (sel, wurzel = document) => wurzel.querySelector(sel);
 const $$ = (sel, wurzel = document) => Array.from(wurzel.querySelectorAll(sel));
@@ -62,9 +89,9 @@ function formatEingabe(wert) {
 }
 
 const AMPEL = {
-  gruen: { symbol: "●", text: "Grün – Plätze frei" },
-  gelb: { symbol: "▲", text: "Gelb – stark ausgelastet" },
-  rot: { symbol: "■", text: "Rot – nahezu voll" },
+  gruen: { symbol: "●", text: "frei – unter 70 % belegt" },
+  gelb: { symbol: "▲", text: "knapp – stark ausgelastet" },
+  rot: { symbol: "■", text: "voll – nahezu ausgelastet" },
 };
 const ampelBadge = (stufe) => `<span class="ampel ampel-${stufe}"><span aria-hidden="true">${AMPEL[stufe].symbol}</span>${AMPEL[stufe].text}</span>`;
 
@@ -143,30 +170,25 @@ const zustand = {
 };
 
 const LAYER_DEFINITION = [
-  { name: "flaechenkandidaten", label: "Testflächen", farbe: "#21918c", an: true },
-  { name: "einfallachsen", label: "Einfallachsen", farbe: "#c2410c", an: true },
-  { name: "haltestellen", label: "S-Bahn-Stationen", farbe: "#0b5cad", an: true },
-  { name: "sharing_stationen", label: "Sharing-Stationen", farbe: "#7c3aed", an: true },
-  { name: "pr_bestand", label: "Bestehende P+R-Teststandorte", farbe: "#111827", an: true },
-  { name: "schutzgebiete_sg", label: "Schutzgebiete", farbe: "#2e7d43", an: true },
-  { name: "schutzgebiete_ug", label: "Überschwemmungsgebiete", farbe: "#38bdf8", an: true },
-  { name: "radwege", label: "Radwege", farbe: "#65a30d", an: false },
-  { name: "pendlerquellen", label: "Pendlerströme ins Zentrum (Testdaten)", farbe: "#b45309", an: false },
-  { name: "stadtgebiet", label: "Stadtgrenze und Zentrum", farbe: "#64748b", an: true },
-  { name: "gewaesser", label: "Main", farbe: "#60a5fa", an: true },
-  { name: "referenzorte", label: "Referenzorte", farbe: "#334155", an: true },
-  { name: "osm", label: "Hintergrundkarte OpenStreetMap (online)", farbe: "#e5e7eb", an: true },
+  { name: "flaechenkandidaten", label: "Testflächen", farbe: "karte-kandidat", an: true },
+  { name: "einfallachsen", label: "Einfallachsen", farbe: "karte-strasse-autobahn", an: true },
+  { name: "haltestellen", label: "S-Bahn-Stationen", farbe: "karte-oepnv-schiene", an: true },
+  { name: "sharing_stationen", label: "Sharing-Stationen", farbe: "karte-oepnv-bus", an: true },
+  { name: "pr_bestand", label: "Bestehende P+R-Teststandorte", farbe: "karte-bestand-pr", an: true },
+  { name: "schutzgebiete_sg", label: "Schutzgebiete", farbe: "karte-schutzgebiet", muster: "schraffur", an: true },
+  { name: "schutzgebiete_ug", label: "Überschwemmungsgebiete", farbe: "akzent-hellblau", an: true },
+  { name: "radwege", label: "Radwege", farbe: "karte-radnetz", muster: "gestrichelt", an: false },
+  { name: "pendlerquellen", label: "Pendlerströme ins Zentrum (Testdaten)", farbe: "akzent-grau", muster: "gestrichelt", an: false },
+  { name: "stadtgebiet", label: "Stadtgrenze und Zentrum", farbe: "akzent-grau", muster: "gestrichelt", an: true },
+  { name: "gewaesser", label: "Main", farbe: "akzent-hellblau", an: true },
+  { name: "referenzorte", label: "Referenzorte", farbe: "basis-text", an: true },
+  { name: "osm", label: "Hintergrundkarte OpenStreetMap (online)", farbe: "basis-hintergrund-sekundaer", an: false },
 ].filter((d) => !(DEMO && d.name === "osm"));
 
-// Viridis-Skala, farbfehlsichtigkeitsfreundlich
-const VIRIDIS = ["#440154", "#3b528b", "#21918c", "#5ec962", "#fde725"];
+// Scorefarbe: von einer hellen Tönung zur Textfarbe des Themes (dunkler = besser)
 function scoreFarbe(score) {
-  const t = Math.max(0, Math.min(1, score / 100)) * (VIRIDIS.length - 1);
-  const i = Math.min(VIRIDIS.length - 2, Math.floor(t));
-  const f = t - i;
-  const hex = (h) => [1, 3, 5].map((p) => parseInt(h.slice(p, p + 2), 16));
-  const a = hex(VIRIDIS[i]); const b = hex(VIRIDIS[i + 1]);
-  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+  const t = Math.max(0, Math.min(1, score / 100));
+  return toenung(T("basis-text"), 0.12 + 0.88 * t);
 }
 
 // ====================================================================== Karte
@@ -186,54 +208,54 @@ async function ladeLayer() {
 
   const L_ = zustand.layer;
   L_.stadtgebiet = L.geoJSON(daten.stadtgebiet, {
-    style: { color: "#64748b", weight: 2, dashArray: "6 4", fill: false },
-    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, color: "#334155", fillColor: "#fff", fillOpacity: 1, weight: 2 }),
+    style: { color: T("akzent-grau"), weight: 2, dashArray: "6 4", fill: false },
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, color: T("basis-text"), fillColor: T("basis-hintergrund"), fillOpacity: 1, weight: 2 }),
     onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name)),
   });
-  L_.gewaesser = L.geoJSON(daten.gewaesser, { style: { color: "#60a5fa", weight: 5, opacity: .8 }, onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name)) });
+  L_.gewaesser = L.geoJSON(daten.gewaesser, { style: { color: T("akzent-hellblau"), weight: 5, opacity: .6 }, onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name)) });
   L_.referenzorte = L.geoJSON(daten.referenzorte, {
-    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 4, color: "#334155", fillColor: "#334155", fillOpacity: .9, weight: 1 }),
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 4, color: T("basis-text"), fillColor: T("basis-text"), fillOpacity: .9, weight: 1 }),
     onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name), { permanent: f.properties.art !== "Autobahnkreuz", direction: "right", className: "ort-label" }),
   });
   const sg = { type: "FeatureCollection", features: daten.schutzgebiete.features.filter((f) => f.properties.typ === "schutzgebiet") };
   const ug = { type: "FeatureCollection", features: daten.schutzgebiete.features.filter((f) => f.properties.typ === "ueberschwemmungsgebiet") };
-  L_.schutzgebiete_sg = L.geoJSON(sg, { style: { color: "#2e7d43", weight: 1.5, fillColor: "#4ade80", fillOpacity: .3 }, onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)} (Testdaten)`) });
-  L_.schutzgebiete_ug = L.geoJSON(ug, { style: { color: "#0284c7", weight: 1.5, fillColor: "#38bdf8", fillOpacity: .35 }, onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)} (Testdaten)`) });
+  L_.schutzgebiete_sg = L.geoJSON(sg, { style: { color: T("karte-schutzgebiet"), weight: 1.5, className: "schraffur-schutz", fillOpacity: 1 }, onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)} (Testdaten)`) });
+  L_.schutzgebiete_ug = L.geoJSON(ug, { style: { color: T("akzent-hellblau"), weight: 1.5, fillColor: T("akzent-hellblau"), fillOpacity: .2 }, onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)} (Testdaten)`) });
   // Pendlerströme: Herkunftsgemeinde → Zentrum, Linienstärke nach Einpendlerzahl
   const zentrum = daten.stadtgebiet.features.find((f) => f.properties.typ === "zentrum").geometry.coordinates;
   L_.pendlerquellen = L.layerGroup(daten.pendlerquellen.features.map((f) => {
     const [lon, lat] = f.geometry.coordinates;
     const text = `<strong>${esc(f.properties.name)}</strong><br>${zahl(f.properties.einpendler)} Einpendler je Werktag (Testdaten)`;
     return L.layerGroup([
-      L.polyline([[lat, lon], [zentrum[1], zentrum[0]]], { color: "#b45309", weight: 1 + f.properties.einpendler / 2500, opacity: .45, dashArray: "4 6" }).bindTooltip(text),
-      L.circleMarker([lat, lon], { radius: 5, color: "#fff", weight: 1.5, fillColor: "#b45309", fillOpacity: 1 }).bindTooltip(text),
+      L.polyline([[lat, lon], [zentrum[1], zentrum[0]]], { color: T("akzent-grau"), weight: 1 + f.properties.einpendler / 2500, opacity: .6, dashArray: "4 6" }).bindTooltip(text),
+      L.circleMarker([lat, lon], { radius: 5, color: T("basis-hintergrund"), weight: 1.5, fillColor: T("akzent-grau"), fillOpacity: 1 }).bindTooltip(text),
     ]);
   }));
-  L_.radwege = L.geoJSON(daten.radwege, { style: { color: "#65a30d", weight: 3, dashArray: "2 6" }, onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name)) });
+  L_.radwege = L.geoJSON(daten.radwege, { style: { color: T("karte-radnetz"), weight: 3, dashArray: "2 6" }, onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.name)) });
   L_.einfallachsen = L.geoJSON(daten.einfallachsen, {
-    style: { color: "#c2410c", weight: 6, opacity: .75 },
+    style: { color: T("karte-strasse-autobahn"), weight: 6, opacity: .8 },
     onEachFeature: (f, l) => l.bindTooltip(`<strong>${esc(f.properties.name)}</strong><br>${zahl(f.properties.dtv_kfz)} Kfz/24 h · ${zahl(f.properties.einpendler)} Einpendler (Testdaten)`),
   });
   L_.haltestellen = L.geoJSON(daten.haltestellen, {
-    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 8, color: "#fff", weight: 2, fillColor: "#0b5cad", fillOpacity: 1 }),
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 8, color: T("basis-hintergrund"), weight: 2, fillColor: T("karte-oepnv-schiene"), fillOpacity: 1 }),
     onEachFeature: (f, l) => l.bindTooltip(`<strong>${esc(f.properties.name)}</strong><br>${f.properties.linien} Linie(n), Takt ${f.properties.takt_min} min (Testdaten)`),
   });
   L_.sharing_stationen = L.geoJSON(daten.sharing_stationen, {
-    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 6, color: "#fff", weight: 2, fillColor: "#7c3aed", fillOpacity: 1 }),
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 6, color: T("basis-hintergrund"), weight: 2, fillColor: T("karte-oepnv-bus"), fillOpacity: 1 }),
     onEachFeature: (f, l) => {
       const p = f.properties;
       l.bindTooltip(`<strong>${esc(p.name)}</strong><br>Bike ${p.bike} · E-Scooter ${p.escooter} · Carsharing ${p.carsharing} · E-Lastenrad ${p.lastenrad}`);
     },
   });
   L_.pr_bestand = L.geoJSON(daten.pr_bestand, {
-    style: { color: "#111827", weight: 2, fillColor: "#111827", fillOpacity: .55 },
+    style: { color: T("karte-bestand-pr"), weight: 2, fillColor: T("karte-bestand-pr"), fillOpacity: .55 },
     onEachFeature: (f, l) => l.bindTooltip(`<strong>${esc(f.properties.name)}</strong><br>${f.properties.stellplaetze} Stellplätze`),
   });
   // Testflächen: Polygon plus nummerierter Marker, damit die Flächen auch in kleinen Maßstäben sichtbar sind
   const polygone = L.geoJSON(daten.flaechenkandidaten, {
     style: (f) => (f.properties.ausgeschlossen
-      ? { color: "#c62832", weight: 2, dashArray: "5 4", fillColor: "#9ca3af", fillOpacity: .45 }
-      : { color: "#1f2937", weight: 1.5, fillColor: "#21918c", fillOpacity: .85 }),
+      ? { color: T("karte-ausschluss"), weight: 2, dashArray: "5 4", fillColor: T("akzent-grau"), fillOpacity: .3 }
+      : { color: T("basis-text"), weight: 1.5, fillColor: T("karte-kandidat"), fillOpacity: .85 }),
     onEachFeature: (f, l) => {
       zustand.flaechenLayer[f.properties.id] = l;
       l.on("click", () => waehleFlaeche(f.properties.id, { zoom: false }));
@@ -258,7 +280,7 @@ async function ladeLayer() {
   LAYER_DEFINITION.forEach((d) => {
     const id = `layer-${d.name}`;
     const label = document.createElement("label");
-    label.innerHTML = `<input type="checkbox" id="${id}" ${d.an ? "checked" : ""}><span class="layer-farbe" style="background:${d.farbe}" aria-hidden="true"></span>${esc(d.label)}`;
+    label.innerHTML = `<input type="checkbox" id="${id}" ${d.an ? "checked" : ""}><span class="layer-farbe ${d.muster ? `muster-${d.muster}` : ""}" style="--farbe: var(--${d.farbe})" aria-hidden="true"></span>${esc(d.label)}`;
     container.appendChild(label);
     const cb = $(`#${id}`, label);
     const umschalten = () => (cb.checked ? zustand.layer[d.name].addTo(zustand.karte) : zustand.layer[d.name].remove());
@@ -281,8 +303,9 @@ function faerbeFlaechen() {
     const ausgeschlossen = e.ausschlussgruende.length > 0;
     if (el) {
       const span = el.querySelector("span");
-      span.style.background = ausgeschlossen ? "#e5e7eb" : scoreFarbe(e.gesamtscore);
-      span.style.color = ausgeschlossen || e.gesamtscore > 62 ? "#111827" : "#ffffff";
+      const flaeche = ausgeschlossen ? toenung(T("akzent-rot"), 0.12) : scoreFarbe(e.gesamtscore);
+      span.style.background = flaeche;
+      span.style.color = ausgeschlossen ? T("basis-text") : lesbarAuf(flaeche);
       el.classList.toggle("ausgeschlossen", ausgeschlossen);
       el.classList.toggle("hinweis", !ausgeschlossen && e.hinweise.length > 0);
       el.classList.toggle("aktiv", aktiv);
@@ -293,10 +316,10 @@ function faerbeFlaechen() {
       ? `<strong>${esc(e.name)}</strong> – ausgeschlossen<br>${e.ausschlussgruende.map(esc).join("<br>")}`
       : `<strong>${esc(e.name)}</strong><br>Rang ${e.rang} · Gesamtscore ${zahl(e.gesamtscore, 1)}${e.hinweise.length ? `<br>⚠ Prüfhinweis: ${e.hinweise.map(esc).join("<br>")}` : ""}`);
     if (e.ausschlussgruende.length) {
-      l.setStyle({ color: "#c62832", weight: aktiv ? 4 : 2, dashArray: "5 4", fillColor: "#9ca3af", fillOpacity: .45 });
+      l.setStyle({ color: T("karte-ausschluss"), weight: aktiv ? 4 : 2, dashArray: "5 4", fillColor: T("akzent-grau"), fillOpacity: .3 });
       l.bindTooltip(`<strong>${esc(e.name)}</strong> – ausgeschlossen<br>${e.ausschlussgruende.map(esc).join("<br>")}`);
     } else {
-      l.setStyle({ color: aktiv ? "#ff9f1c" : "#1f2937", weight: aktiv ? 4 : 1.5, dashArray: null, fillColor: scoreFarbe(e.gesamtscore), fillOpacity: .85 });
+      l.setStyle({ color: aktiv ? T("focus-ring") : T("basis-text"), weight: aktiv ? 4 : 1.5, dashArray: null, fillColor: scoreFarbe(e.gesamtscore), fillOpacity: .85 });
       l.bindTooltip(`<strong>${esc(e.name)}</strong><br>Rang ${e.rang} · Gesamtscore ${zahl(e.gesamtscore, 1)}`);
     }
   });
@@ -587,10 +610,10 @@ async function ladeVergleich(fokus = true) {
   try { v = await api(`/api/vergleich?ids=${ids.join(",")}&${gewichtsParameter()}`); } catch (e) { zeigeFehler(e.message); return; }
   const fl = v.flaechen;
   const ind = zustand.konfig.indikatoren;
-  const farben = ["#0b5cad", "#c2410c", "#2e7d43"];
+  const farben = [0, 1, 2].map(SERIE);
   const zeile = (label, f) => `<tr><th scope="row" class="links">${label}</th>${fl.map((x) => `<td>${f(x)}</td>`).join("")}</tr>`;
   $("#vergleich-tabelle").innerHTML = `
-    <thead><tr><th scope="col" class="links">Merkmal</th>${fl.map((x, i) => `<th scope="col"><span style="color:${farben[i]}" aria-hidden="true">■</span> ${esc(x.name)}</th>`).join("")}</tr></thead>
+    <thead><tr><th scope="col" class="links">Merkmal</th>${fl.map((x, i) => `<th scope="col"><span class="serien-marke" style="--farbe: ${farben[i]}" aria-hidden="true"></span> ${esc(x.name)}</th>`).join("")}</tr></thead>
     <tbody>
       ${zeile("Rang", (x) => (x.ausgeschlossen ? "ausgeschlossen" : `${x.rang} von ${x.anzahl_bewertet}`))}
       ${zeile("Gesamtscore", (x) => `<strong>${zahl(x.bewertung.gesamtscore, 1)}</strong>`)}
@@ -606,7 +629,8 @@ async function ladeVergleich(fokus = true) {
     labels: Object.values(ind).map((d) => d.label),
     datasets: fl.map((x, i) => ({
       label: x.name, data: Object.keys(ind).map((k) => x.bewertung.teilscores[k].score),
-      borderColor: farben[i], backgroundColor: `${farben[i]}22`, pointBackgroundColor: farben[i], borderWidth: 2,
+      borderColor: farben[i], backgroundColor: toenung(farben[i], 0.15), pointBackgroundColor: farben[i], borderWidth: 2,
+      pointStyle: ["circle", "rect", "triangle"][i],
     })),
   };
   diagramm("vergleich-radar", "radar", daten, { scales: { r: { min: 0, max: 100, ticks: { stepSize: 25 } } } });
@@ -638,7 +662,8 @@ function diagramm(id, typ, daten, optionen = {}) {
       responsive: true, maintainAspectRatio: false,
       animation: bewegung.reduziert ? false : { duration: 400 },
       interaction: { mode: "index", intersect: false },
-      plugins: { legend: { display: daten.datasets.length > 1, position: "bottom" } },
+      plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, color: T("basis-text") } } },
+      color: T("basis-text"),
       ...optionen,
     },
   });
@@ -758,15 +783,15 @@ async function ladeLive() {
   zeichneHerleitung();
 
   const standorte = live.standorte;
-  const farbeAmpel = { gruen: "#2e7d43", gelb: "#b88a00", rot: "#c62832" };
+  const farbeAmpel = { gruen: T("ampel-frei"), gelb: T("ampel-knapp"), rot: T("ampel-voll") };
   const labels = standorte.map((s) => s.name.replace(/^P\+R-Teststandort /, "Test "));
   diagramm("sv-auslastung", "bar", { labels, datasets: [{ label: "Auslastung", data: standorte.map((s) => s.kennzahlen.auslastung.wert), backgroundColor: standorte.map((s) => farbeAmpel[s.ampel]) }] },
     { scales: { y: prozentAchse(1) }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${prozent(c.raw)} – ${AMPEL[standorte[c.dataIndex].ampel].text}` } } } });
-  diagramm("sv-deckungsgrad", "bar", { labels, datasets: [{ label: "Deckungsgrad", data: standorte.map((s) => s.kennzahlen.deckungsgrad.wert), backgroundColor: "#0b5cad" }] },
+  diagramm("sv-deckungsgrad", "bar", { labels, datasets: [{ label: "Deckungsgrad", data: standorte.map((s) => s.kennzahlen.deckungsgrad.wert), backgroundColor: SERIE(0) }] },
     { scales: { y: prozentAchse(1) }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => prozent(c.raw) } } } });
   diagramm("sv-kosten", "bar", { labels, datasets: [
-    { label: "netto (Zuschussbedarf)", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt.wert), backgroundColor: "#7c3aed" },
-    { label: "brutto (ohne Erlöse)", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt_brutto.wert), backgroundColor: "#c4b5fd" },
+    { label: "netto (Zuschussbedarf)", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt.wert), backgroundColor: SERIE(0) },
+    { label: "brutto (ohne Erlöse)", data: standorte.map((s) => s.kennzahlen.kosten_je_verlagerter_fahrt_brutto.wert), backgroundColor: SERIE(1) },
   ] }, { scales: { y: { min: 0, ticks: { callback: (v) => euro(v, 0) } } }, plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${euro(c.raw)}` } } } });
 }
 
@@ -803,20 +828,20 @@ async function ladeZeitreihe() {
   diagramm("zr-auslastung", "line", {
     labels: z.auslastung.beschriftungen,
     datasets: [
-      { label: "Auslastung", data: z.auslastung.werte, borderColor: "#0b5cad", backgroundColor: "#0b5cad22", fill: true, pointRadius: 0, tension: .25 },
-      { label: `Gelb ab ${prozent(ampel.gruen_bis, 0)}`, data: z.auslastung.werte.map(() => ampel.gruen_bis), borderColor: "#b88a00", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
-      { label: `Rot ab ${prozent(ampel.gelb_bis, 0)}`, data: z.auslastung.werte.map(() => ampel.gelb_bis), borderColor: "#c62832", borderDash: [2, 3], pointRadius: 0, borderWidth: 1.5 },
+      { label: "Auslastung", data: z.auslastung.werte, borderColor: SERIE(0), backgroundColor: toenung(SERIE(0), 0.12), fill: true, pointRadius: 0, tension: .25 },
+      { label: `stark ausgelastet ab ${prozent(ampel.gruen_bis, 0)}`, data: z.auslastung.werte.map(() => ampel.gruen_bis), borderColor: SERIE(3), borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
+      { label: `Warnschwelle: nahezu voll ab ${prozent(ampel.gelb_bis, 0)}`, data: z.auslastung.werte.map(() => ampel.gelb_bis), borderColor: T("chart-alert"), borderDash: [2, 3], pointRadius: 0, borderWidth: 2 },
     ],
   }, { scales: { y: { ...prozentAchse(1), max: 1 }, x: { ticks: { maxTicksLimit: 8, autoSkip: true } } }, plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${prozent(c.raw)}` } } } });
   $("#zr-erloes-titel").textContent = `Erlös (${z.erloes.einheit})`;
-  diagramm("zr-erloes", "bar", { labels: z.erloes.beschriftungen, datasets: [{ label: "Erlös", data: z.erloes.werte, backgroundColor: "#2e7d43" }] },
+  diagramm("zr-erloes", "bar", { labels: z.erloes.beschriftungen, datasets: [{ label: "Erlös", data: z.erloes.werte, backgroundColor: SERIE(1) }] },
     { scales: { y: { min: 0, ticks: { callback: (v) => euro(v, 0) } }, x: { ticks: { maxTicksLimit: 12 } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => euro(c.raw) } } } });
   $("#zr-dg-titel").textContent = `Deckungsgrad – ${z.deckungsgrad.erlaeuterung}`;
   diagramm("zr-deckungsgrad", "line", {
     labels: z.deckungsgrad.beschriftungen,
     datasets: [
-      { label: "Deckungsgrad", data: z.deckungsgrad.werte, borderColor: "#7c3aed", pointRadius: fenster === "woche" ? 3 : 0, tension: .2 },
-      { label: "Kostendeckung 100 %", data: z.deckungsgrad.werte.map(() => 1), borderColor: "#4a5563", borderDash: [6, 4], pointRadius: 0, borderWidth: 1 },
+      { label: "Deckungsgrad", data: z.deckungsgrad.werte, borderColor: SERIE(0), pointRadius: fenster === "woche" ? 3 : 0, tension: .2 },
+      { label: "Kostendeckung 100 %", data: z.deckungsgrad.werte.map(() => 1), borderColor: SERIE(3), borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
     ],
   }, { scales: { y: prozentAchse(1.1), x: { ticks: { maxTicksLimit: 8 } } }, plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${prozent(c.raw)}` } } } });
 }
@@ -903,11 +928,11 @@ function zeichneWirkungsDiagramm() {
   diagramm("wk-diagramm", "line", {
     labels,
     datasets: [
-      { label: "vor Eröffnung", data: i.reihe.map((p) => (p.zeitraum === "vorher" ? p.wert : null)), borderColor: "#64748b", pointRadius: 0, borderWidth: 1.5, spanGaps: false },
-      { label: "nach Eröffnung", data: i.reihe.map((p) => (p.zeitraum === "nachher" ? p.wert : null)), borderColor: "#0b5cad", pointRadius: 0, borderWidth: 1.5, spanGaps: false },
+      { label: "vor Eröffnung", data: i.reihe.map((p) => (p.zeitraum === "vorher" ? p.wert : null)), borderColor: SERIE(3), pointRadius: 0, borderWidth: 1.5, spanGaps: false },
+      { label: "nach Eröffnung", data: i.reihe.map((p) => (p.zeitraum === "nachher" ? p.wert : null)), borderColor: SERIE(0), pointRadius: 0, borderWidth: 1.5, spanGaps: false },
       ...(v ? [
-        { label: "Ø vorher", data: i.reihe.map((p) => (p.zeitraum === "vorher" ? v.mittel_vorher : null)), borderColor: "#64748b", borderDash: [6, 4], pointRadius: 0, borderWidth: 2 },
-        { label: "Ø nachher", data: i.reihe.map((p) => (p.zeitraum === "nachher" ? v.mittel_nachher : null)), borderColor: "#0b5cad", borderDash: [6, 4], pointRadius: 0, borderWidth: 2 },
+        { label: "Ø vorher", data: i.reihe.map((p) => (p.zeitraum === "vorher" ? v.mittel_vorher : null)), borderColor: SERIE(3), borderDash: [6, 4], pointRadius: 0, borderWidth: 2 },
+        { label: "Ø nachher", data: i.reihe.map((p) => (p.zeitraum === "nachher" ? v.mittel_nachher : null)), borderColor: SERIE(0), borderDash: [6, 4], pointRadius: 0, borderWidth: 2 },
       ] : []),
     ],
   }, { scales: { x: { ticks: { maxTicksLimit: 10 } }, y: { ticks: { callback: (x) => zahl(x) } } }, plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${zahl(c.raw)} ${i.einheit}` } } } });

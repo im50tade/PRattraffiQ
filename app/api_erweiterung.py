@@ -132,6 +132,23 @@ def linien(request: Request):
                       for f in _features(g.linien, ["id", "linie", "verkehrsmittel", "takt", "haltestellen", "quelle", "abrufdatum", "testdaten"])])
 
 
+@router.get("/netz/schutzgebiete")
+def schutzgebiete(request: Request):
+    """Schutz-, Überschwemmungs- und Wasserschutzgebiete je Datengruppe (Darstellung als Schraffur)."""
+    typen = konf.bewertung()["ausschluss"]["gebietstypen"]
+    feats = []
+    for g in zustand.datenbasis.auswahl(_testdaten(request)):
+        for schluessel in ("schutzgebiete", "wasserschutz"):
+            gdf = g.geo.get(schluessel)
+            if gdf is None:
+                continue
+            for _, r in gdf.iterrows():
+                feats.append({"type": "Feature", "geometry": r.geometry.__geo_interface__,
+                              "properties": {"name": r.get("name"), "art": typen.get(r.get("typ"), {}).get("label", r.get("typ")),
+                                             "testdaten": g.testdaten, "abrufdatum": r.get("abrufdatum")}})
+    return _sammlung(feats)
+
+
 # ============================================================================ Kandidaten
 @router.get("/kandidaten/karte")
 def kandidaten_karte(request: Request):

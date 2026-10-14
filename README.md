@@ -147,6 +147,28 @@ Alles Fachliche steht in `config/einstellungen.yaml`:
 
 Eine alternative Datei kann mit `PR_KONFIG=/pfad/zur/datei.yaml` geladen werden.
 
+### Farben und Erscheinungsbild (traffiQ)
+
+`config/traffiq_theme.yaml` ist die **einzige Quelle für Farben**. Der Server erzeugt daraus `/theme.css`
+(CSS-Variablen), das Favicon und `/api/theme`; Stylesheet, Karte und Diagramme lesen nur diese Variablen.
+Der Test `test_keine_hexwerte_ausserhalb_der_theme_datei` stellt sicher, dass außerhalb der Theme-Datei
+keine Farbwerte im Code stehen (ausgenommen die eingebundenen Fremdbibliotheken unter `app/static/vendor`).
+
+- `basis` – Textfarbe, Hintergrund, Sekundärhintergrund; `akzent` – Grün, Hellblau, Rot, Grau
+- `map_layers` – Farbe je Kartenebene (Bestands-P+R, Schiene, Bus, Autobahn, Hauptstraße, Radnetz,
+  Kandidat, Zwischennutzung, Schutzgebiet, Ausschluss); `status` – Realismus-Status; `ampel` – Auslastung
+- `chart_series` – Reihenfolge der Diagrammfarben, `chart_alert` – Warnschwelle; `focus_ring`
+- `logo` – Text-Logo und Pfad der Logodatei; `schrift` – Schriftfamilie und Fließtextgröße
+- Mit `PR_THEME=/pfad/zur/theme.yaml` lässt sich eine andere Theme-Datei laden.
+
+Werte mit dem Kommentar „Vorschlag“ sind aus dem Spektrum abgeleitet und noch abzustimmen.
+Das **Startbild** (Reiter „Karte“) zeigt die Karte bildschirmfüllend, links die Top 10 Flächen und
+oben die Filter. Voreingestellt sind Bestands-P+R, S-/U-Bahn und Hauptstraßen; höchstens sieben
+Ebenen sind gleichzeitig aktiv.
+
+**Logo:** Solange keine Datei vorliegt, erscheint ein Text-Logo. Eine SVG-Datei unter
+`app/static/logo/traffiq_logo.svg` wird automatisch verwendet.
+
 ### Erweiterung auf die Metropolregion Rhein-Main
 
 1. Unter `region.regionen` eine Region anlegen (Beispiel `rhein_main` ist vorbereitet) und Gemeinden
@@ -277,9 +299,13 @@ nicht verlassen dürfen.
 
 - Tastaturbedienung: Reiter (Pfeiltasten, Pos1/Ende), Ranking-Tabelle (Tab, Pfeil auf/ab, Eingabetaste),
   sortierbare Spaltenköpfe als Schaltflächen mit `aria-sort`, Regler mit Textwert, Kartenmarker fokussierbar.
-- Ampel immer mit Farbe **plus** Symbol (● ▲ ■) und Text; Farbskala der Scores ist farbfehlsichtigkeitsfreundlich (Viridis).
+- Ampel immer mit Farbe **plus** Symbol (● frei, ▲ knapp, ■ voll) und Text; Realismus-Status immer mit Symbol
+  (Haken, Halbkreis, gestrichelter Kreis, Kreuz) und Text; Scores als dunkelblaue Tonstufe plus Zahl.
+- Alle Textpaare erreichen WCAG AA (wird in `tests/test_theme.py` aus der Theme-Datei nachgerechnet);
+  Grün, Hellblau und Grau dienen nur für Flächen, Linien, Symbole und Rahmen, nie für kleine Schrift.
+- Sichtbarer Fokusrahmen (`focus_ring`) an allen bedienbaren Elementen.
 - „Animationen reduzieren“ (folgt standardmäßig `prefers-reduced-motion`) schaltet Diagramm-, Karten- und Scroll-Animationen ab.
-- Responsives Layout bis Smartphone-Breite.
+- Responsives Layout bis Smartphone-Breite: Umschalter Karte/Top 10, Steckbrief als Vollbild.
 
 ## Annahmen (Standardwerte)
 

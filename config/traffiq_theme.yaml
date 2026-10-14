@@ -1,0 +1,74 @@
+# traffiQ-Farbspektrum – einzige Quelle für Farben der Oberfläche.
+# Der Server erzeugt daraus /theme.css (CSS-Variablen); JavaScript liest die Werte aus diesen Variablen.
+# Im Code stehen keine Farbwerte. Werte mit „Vorschlag“ sind aus dem Spektrum abgeleitet und
+# von traffiQ zu bestätigen.
+
+name: "traffiQ Frankfurt am Main"
+
+logo:
+  text: "traffiQ"
+  zusatz: "Frankfurt am Main"
+  datei: "static/logo/traffiq_logo.svg"   # wird angezeigt, sobald die Datei vorhanden ist; bis dahin Textlogo
+
+schrift:
+  familie: "Arial, Helvetica, sans-serif"  # Platzhalter bis zur Hausschrift
+  groesse_fliesstext_px: 16
+
+basis:
+  text: "#162a6b"
+  hintergrund: "#ffffff"
+  hintergrund_sekundaer: "#f3f4f6"
+
+akzent:
+  gruen: "#009c84"        # nur Flächen, Linien, Symbole, Rahmen – nie Textfarbe, kein kleiner Text darauf
+  hellblau: "#009ee2"     # nur Flächen, Linien, Symbole, Rahmen – nie Textfarbe, kein kleiner Text darauf
+  rot: "#e30613"          # nur Warnungen und ausgeschlossene Flächen, immer mit Text
+  grau: "#90969a"         # Linien und Rahmen, keine Textfarbe
+
+focus_ring: "#009ee2"
+
+map_layers:
+  bestand_pr: "#162a6b"
+  oepnv_schiene: "#009c84"
+  oepnv_bus: "#009ee2"
+  strasse_autobahn: "#90969a"   # Vorschlag: dick gezeichnet, ruhiger als Dunkelblau
+  strasse_haupt: "#90969a"
+  strasse_neben: "#90969a"      # Vorschlag: dünn und halbtransparent
+  radnetz: "#009ee2"            # Vorschlag: gestrichelt, unterscheidet sich so vom Bus
+  kandidat: "#009ee2"           # Vorschlag
+  zwischennutzung: "#009c84"    # Vorschlag: gestrichelter Rand
+  schutzgebiet: "#009c84"       # Vorschlag: Schraffur
+  ausschluss: "#e30613"
+
+status:
+  geprueft: "#009c84"
+  plausibel: "#009ee2"
+  hinweis: "#90969a"
+  ausgeschlossen: "#e30613"
+
+ampel:
+  # Auslastung; immer zusammen mit Symbol und Text. Das Spektrum enthält kein Gelb.
+  frei: "#009c84"
+  knapp: "#162a6b"              # Vorschlag
+  voll: "#e30613"
+
+chart_series: ["#162a6b", "#009c84", "#009ee2", "#90969a"]
+chart_alert: "#e30613"
+
+# Hellere Tönungen für Hinterlegungen entstehen in CSS mit color-mix aus diesen Farben.
+toenung_anteil: 0.12
+
+# Textpaare, die der Test auf WCAG AA (4,5:1) prüft: [Textfarbe, Hintergrund]
+# Pfade verweisen auf Schlüssel dieser Datei; "toenung:<pfad>" ist die helle Tönung einer Farbe.
+textpaare:
+  - [basis.text, basis.hintergrund]
+  - [basis.text, basis.hintergrund_sekundaer]
+  - [basis.hintergrund, basis.text]
+  - [basis.text, "toenung:akzent.gruen"]
+  - [basis.text, "toenung:akzent.hellblau"]
+  - [basis.text, "toenung:akzent.rot"]
+  - [basis.text, "toenung:akzent.grau"]
+  - [akzent.rot, basis.hintergrund]
+  - ["sekundaertext", basis.hintergrund]
+  - ["sekundaertext", basis.hintergrund_sekundaer]
+sekundaertext_anteil: 0.75        # Sekundärtext = Textfarbe 75 % + Hintergrund 25 %

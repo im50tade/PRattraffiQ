@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from . import konfiguration as konf
 from .adapters.geodaten import GbfsStationsQuelle, GeoJsonQuelle, GtfsHaltestellenQuelle
-from . import api_erweiterung
+from . import api_erweiterung, theme
 from .adapters.zaehlreihen import ZaehlreihenSimulator, ZaehlstellenCsvQuelle
 from .domain.scoring import INDIKATOREN
 from .services.flaechenfinder import Flaechenfinder
@@ -111,6 +111,24 @@ def gewichte_aus(request: Request) -> dict[str, float]:
 @app.get("/", include_in_schema=False)
 def startseite():
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/theme.css", include_in_schema=False)
+def theme_css():
+    """CSS-Variablen aus config/traffiq_theme.yaml (einzige Farbquelle)."""
+    return Response(theme.css(), media_type="text/css; charset=utf-8")
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+def favicon():
+    return Response(theme.favicon(), media_type="image/svg+xml")
+
+
+@app.get("/api/theme", tags=["Allgemein"])
+def theme_info():
+    t = theme.laden()
+    logo = t["logo"]
+    return {"name": t["name"], "logo": {**logo, "vorhanden": (STATIC.parent / logo["datei"]).exists()}}
 
 
 @app.get("/api/konfiguration", tags=["Allgemein"])

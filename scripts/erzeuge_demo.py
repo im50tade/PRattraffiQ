@@ -34,7 +34,7 @@ from app.adapters.zaehlreihen import ZaehlreihenSimulator  # noqa: E402
 from app.services.flaechenfinder import Flaechenfinder  # noqa: E402
 from app.services.monitoring import MonitoringDienst  # noqa: E402
 from app.services.wirkung import WirkungsDienst  # noqa: E402
-from app import api_erweiterung  # noqa: E402
+from app import api_erweiterung, theme  # noqa: E402
 from app.domain import scoring as sc  # noqa: E402
 from app.domain import zwischennutzung as zn  # noqa: E402
 from app.services import datenlage  # noqa: E402
@@ -139,6 +139,7 @@ def erweiterung_erzeugen() -> dict:
         "bestand": api_erweiterung.bestand(leer),
         "bestand_steckbriefe": {b["id"]: api_erweiterung.bestand_steckbrief(b["id"]) for g in z.datenbasis.gruppen.values() for b in g.pr_bestand},
         "strassen": api_erweiterung.strassen(leer), "radnetz": api_erweiterung.radnetz(leer),
+        "schutz": api_erweiterung.schutzgebiete(leer),
         "haltestellen": api_erweiterung.haltestellen(leer), "linien": api_erweiterung.linien(leer),
         "karte": z.pipeline.geojson(True), "kandidaten": kandidaten, "teilscores": teilscores, "zwischennutzung": zwischen,
         "datenlage": {**bericht, "markdown": datenlage.als_markdown(bericht)},
@@ -369,7 +370,7 @@ window.PR_DEMO = true;
       if (E) {
         const ohneTest = q.get("testdaten") === "0";
         const filt = (fc) => ({ type: "FeatureCollection", features: ohneTest ? fc.features.filter((f) => !f.properties.testdaten) : fc.features });
-        const netz = { "/api/bestand": "bestand", "/api/netz/strassen": "strassen", "/api/netz/radnetz": "radnetz", "/api/netz/haltestellen": "haltestellen", "/api/netz/linien": "linien" };
+        const netz = { "/api/bestand": "bestand", "/api/netz/strassen": "strassen", "/api/netz/radnetz": "radnetz", "/api/netz/haltestellen": "haltestellen", "/api/netz/linien": "linien", "/api/netz/schutzgebiete": "schutz" };
         if (pfad === "/api/erweiterung/konfiguration") return antwort(E.konfiguration);
         if (netz[pfad]) return antwort(filt(E[netz[pfad]]));
         if ((m = pfad.match(/^\/api\/bestand\/(.+)\/steckbrief$/))) {
@@ -415,14 +416,13 @@ DEMO_CSS = """
 /* Demo-Ansicht: Seitenränder für schmale Bildschirme, kein Dateiexport */
 .kopf, .reiter, .fuss { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 1rem; }
-.demo-hinweis { margin: 0 0 1rem; border-color: #b9a3e3; background: var(--test-bg); color: var(--test-text); font-size: .9rem; }
+.demo-hinweis { margin: 0; border-radius: 0; border-width: 0 0 1px 4px; border-color: var(--basis-text); background: var(--basis-hintergrund-sekundaer); }
+body:not(.startansicht) .demo-hinweis { margin-bottom: 1rem; border-radius: var(--radius); border-width: 1px 1px 1px 4px; }
 #wetter { pointer-events: none; opacity: .6; }
 """
 
-DEMO_HINWEIS = """<p class="hinweis demo-hinweis" id="demo-hinweis"><strong>Demo-Ansicht.</strong> Alle Werte wurden am {erzeugt} mit dem
-Python-Backend vorberechnet und laufen hier ohne Server. Gewichtung, Ranking, Steckbriefe und Vergleich sind voll interaktiv.
-Das Monitoring spielt einen simulierten Tag ab (Zeitraffer, Intervall und Pause wirken; die Wettervorgabe nur in der vollständigen Version).
-Befragungsergebnisse und Review-Entscheidungen gelten nur für diese Sitzung. Hintergrundkarte und Dateiexport gibt es nur in der vollständigen Version.</p>"""
+DEMO_HINWEIS = """<p class="hinweis demo-hinweis" id="demo-hinweis"><strong>Demo-Ansicht</strong> mit am {erzeugt} vorberechneten Testdaten.
+Eingaben gelten nur für diese Sitzung; Hintergrundkarte, Dateiexport und Wettervorgabe gibt es nur in der vollständigen Version.</p>"""
 
 
 def html_erzeugen(daten: dict) -> str:
@@ -445,6 +445,7 @@ def html_erzeugen(daten: dict) -> str:
 <style>
 {leaflet_css}
 {cluster_css}
+{theme.css()}
 {styles}
 {DEMO_CSS}
 </style>

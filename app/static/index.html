@@ -7,15 +7,29 @@
   <meta name="description" content="Prototyp zur Suche, Bewertung und zum Monitoring von Park-and-Ride-Flächen im Raum Frankfurt am Main">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
         onerror="this.onerror=null;this.href='/static/vendor/leaflet/leaflet.css'">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b5cad'/%3E%3Ctext x='16' y='22' font-size='15' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP+R%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.css">
   <link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.Default.css">
+  <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <a class="sprunglink" href="#inhalt">Zum Inhalt springen</a>
 
+  <!-- Schraffuren für Schutzgebiete; Farbe aus dem Theme -->
+  <svg class="muster-definitionen" aria-hidden="true" focusable="false" width="0" height="0">
+    <defs>
+      <pattern id="schraffur-schutz" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="8" class="schraffur-linie"></line>
+      </pattern>
+    </defs>
+  </svg>
+
   <header class="kopf">
+    <a class="logo" href="#karte" aria-label="traffiQ Frankfurt am Main – zur Startkarte">
+      <img id="logo-bild" alt="traffiQ Frankfurt am Main" hidden>
+      <span class="logo-text" id="logo-text"><span class="logo-marke">traffiQ</span><span class="logo-zusatz">Frankfurt am Main</span></span>
+    </a>
     <div class="kopf-titel">
       <h1>P+R Flächenfinder Rhein-Main</h1>
       <p class="kopf-region"><span id="region-label">Pilotraum Frankfurt am Main</span>
@@ -34,8 +48,9 @@
   </header>
 
   <nav class="reiter" role="tablist" aria-label="Module">
-    <button role="tab" id="tab-finder" aria-controls="panel-finder" aria-selected="true">Flächenfinder</button>
-    <button role="tab" id="tab-netz" aria-controls="panel-netz" aria-selected="false" tabindex="-1">Netz und Kandidaten</button>
+    <button role="tab" id="tab-karte" aria-controls="panel-karte" aria-selected="true">Karte</button>
+    <button role="tab" id="tab-netz" aria-controls="panel-netz" aria-selected="false" tabindex="-1">Kandidaten und Review</button>
+    <button role="tab" id="tab-finder" aria-controls="panel-finder" aria-selected="false" tabindex="-1">Testflächen</button>
     <button role="tab" id="tab-monitoring" aria-controls="panel-monitoring" aria-selected="false" tabindex="-1">Live-Monitoring</button>
     <button role="tab" id="tab-wirkung" aria-controls="panel-wirkung" aria-selected="false" tabindex="-1">Wirkungsanalyse</button>
     <button role="tab" id="tab-datenlage" aria-controls="panel-datenlage" aria-selected="false" tabindex="-1">Datenlage</button>
@@ -45,8 +60,104 @@
   <main id="inhalt">
     <p id="lade-fehler" class="hinweis hinweis-fehler" hidden></p>
 
-    <!-- ===================================================== Flächenfinder -->
-    <section id="panel-finder" role="tabpanel" aria-labelledby="tab-finder" tabindex="0">
+    <!-- ===================================================== Startbild: Karte -->
+    <section id="panel-karte" role="tabpanel" aria-labelledby="tab-karte" class="start" data-ansicht="karte">
+      <h2 class="sr-only">Karte mit den besten Flächen</h2>
+      <div class="filterleiste" role="group" aria-label="Filter">
+        <div class="filter">
+          <label for="kand-profil">Gewichtung</label>
+          <select id="kand-profil"></select>
+        </div>
+        <div class="filter">
+          <label for="top-status">Realismus-Status</label>
+          <select id="top-status">
+            <option value="">geprüft und plausibel</option>
+            <option value="geprüft">nur geprüft</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="top-flaeche">Mindestfläche</label>
+          <select id="top-flaeche">
+            <option value="0">alle Größen</option>
+            <option value="5000">ab 5.000 m²</option>
+            <option value="10000">ab 10.000 m²</option>
+            <option value="20000">ab 20.000 m²</option>
+          </select>
+        </div>
+        <div class="filter filter-ebenen">
+          <button type="button" class="knopf knopf-zweit" id="ebenen-knopf" aria-expanded="false" aria-controls="ebenen-panel">
+            Kartenebenen <span class="zaehler" id="ebenen-zaehler">3 von 7</span>
+          </button>
+          <div id="ebenen-panel" class="ebenen-panel" hidden>
+            <p class="klein" id="ebenen-hinweis">Höchstens sieben Ebenen gleichzeitig.</p>
+            <fieldset><legend>Bestand und Flächen</legend>
+              <label><input type="checkbox" data-ebene="bestand" id="nl-bestand" checked><span class="legende-symbol sym-bestand" aria-hidden="true">P</span>Bestehende P+R-Anlagen</label>
+              <label><input type="checkbox" data-ebene="kandidaten" id="nl-kandidaten"><span class="legende-symbol sym-kandidat" aria-hidden="true"></span>Kandidatenflächen</label>
+              <label><input type="checkbox" data-ebene="zwischen" id="nl-zwischen"><span class="legende-symbol sym-zwischen" aria-hidden="true"></span>Zwischennutzung</label>
+              <label><input type="checkbox" data-ebene="ausschluss" id="nl-ausschluss"><span class="legende-symbol sym-ausschluss" aria-hidden="true">✕</span>Ausgeschlossene Flächen</label>
+              <label><input type="checkbox" data-ebene="schutz" id="nl-schutz"><span class="legende-symbol sym-schutz" aria-hidden="true"></span>Schutz- und Überschwemmungsgebiete</label>
+            </fieldset>
+            <fieldset><legend>ÖPNV</legend>
+              <label><input type="checkbox" data-ebene="schiene" id="nl-schiene" checked><span class="legende-symbol sym-schiene" aria-hidden="true"></span>S-Bahn und U-Bahn</label>
+              <label><input type="checkbox" data-ebene="tram" id="nl-tram"><span class="legende-symbol sym-tram" aria-hidden="true"></span>Straßenbahn</label>
+              <label><input type="checkbox" data-ebene="bus" id="nl-bus"><span class="legende-symbol sym-bus" aria-hidden="true"></span>Bus</label>
+              <label class="unteroption"><input type="checkbox" id="nl-haltestellen" checked>Haltestellen der gewählten Verkehrsmittel</label>
+              <div class="filter-zeile">
+                <label for="nl-tageszeit">Takt für</label><select id="nl-tageszeit"></select>
+                <label for="nl-mindesttakt">Mindesttakt</label>
+                <select id="nl-mindesttakt">
+                  <option value="">alle Takte</option>
+                  <option value="5">mindestens alle 5 Minuten</option>
+                  <option value="10">mindestens alle 10 Minuten</option>
+                  <option value="15">mindestens alle 15 Minuten</option>
+                  <option value="20">mindestens alle 20 Minuten</option>
+                  <option value="30">mindestens alle 30 Minuten</option>
+                </select>
+                <label for="nl-linie">Linie</label><select id="nl-linie"><option value="">alle Linien</option></select>
+              </div>
+            </fieldset>
+            <fieldset><legend>Straßen und Rad</legend>
+              <label><input type="checkbox" data-ebene="autobahn" id="nl-autobahn"><span class="legende-symbol sym-autobahn" aria-hidden="true"></span>Autobahnen</label>
+              <label><input type="checkbox" data-ebene="haupt" id="nl-haupt" checked><span class="legende-symbol sym-haupt" aria-hidden="true"></span>Hauptstraßen und Bundesstraßen</label>
+              <label><input type="checkbox" data-ebene="neben" id="nl-neben"><span class="legende-symbol sym-neben" aria-hidden="true"></span>Nebenstraßen (ab Zoomstufe 13)</label>
+              <label><input type="checkbox" data-ebene="radnetz" id="nl-radnetz"><span class="legende-symbol sym-radnetz" aria-hidden="true"></span>Radnetz</label>
+            </fieldset>
+          </div>
+        </div>
+        <div class="filter ansicht-umschalter" role="group" aria-label="Ansicht">
+          <button type="button" class="knopf knopf-zweit" data-ansicht="karte" aria-pressed="true">Karte</button>
+          <button type="button" class="knopf knopf-zweit" data-ansicht="liste" aria-pressed="false">Top 10</button>
+        </div>
+      </div>
+
+      <div class="start-raster">
+        <aside class="top10" aria-labelledby="top10-titel">
+          <h2 id="top10-titel">Top 10 Flächen</h2>
+          <p class="klein" id="top10-info">Bewertung nach Gewichtung „Ausgewogen“.</p>
+          <ol id="top10-liste" class="top10-liste"></ol>
+          <div class="status-legende" aria-label="Realismus-Status">
+            <span><span class="status-symbol status-geprüft" aria-hidden="true"></span> geprüft</span>
+            <span><span class="status-symbol status-plausibel" aria-hidden="true"></span> plausibel</span>
+            <span><span class="status-symbol status-hinweis" aria-hidden="true"></span> Hinweis</span>
+            <span><span class="status-symbol status-ausgeschlossen" aria-hidden="true"></span> ausgeschlossen</span>
+          </div>
+        </aside>
+        <div class="start-karte">
+          <div id="netz-karte" role="region" aria-label="Karte mit Bestands-P+R, ÖPNV, Straßen und Flächen"></div>
+          <p class="karte-status" id="netz-status" aria-live="polite"></p>
+          <section id="netz-detail" class="steckbrief-panel" aria-labelledby="netz-detail-titel" hidden>
+            <div class="steckbrief-kopf">
+              <h2 id="netz-detail-titel" tabindex="-1">Steckbrief</h2>
+              <button type="button" class="knopf knopf-zweit" id="netz-detail-schliessen">Schließen</button>
+            </div>
+            <div id="netz-detail-inhalt"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================== Flächenfinder (Testflächen) -->
+    <section id="panel-finder" role="tabpanel" aria-labelledby="tab-finder" tabindex="0" hidden>
       <p class="hinweis testmodul-hinweis">Dieses Modul arbeitet derzeit ausschließlich mit Testdaten. Sie sind ausgeblendet; zum Anzeigen oben „Testdaten anzeigen“ einschalten.</p>
       <div class="testmodul-inhalt">
       <div class="finder-raster">
@@ -156,7 +267,7 @@
 
       <section class="karte-block" aria-labelledby="dashboard-titel">
         <h2 id="dashboard-titel">Auslastung jetzt</h2>
-        <p class="klein">Ampel: grün unter 70 %, gelb 70–90 %, rot über 90 %. Operative Werte beziehen sich auf die letzten 24 Stunden, Wirtschaftlichkeit und Wirkung auf den Durchschnittstag der letzten 7 Tage.</p>
+        <p class="klein">Ampel (Symbol und Text): ● frei unter 70 %, ▲ knapp 70–90 %, ■ voll über 90 %. Operative Werte beziehen sich auf die letzten 24 Stunden, Wirtschaftlichkeit und Wirkung auf den Durchschnittstag der letzten 7 Tage.</p>
         <div id="kacheln" class="kacheln"></div>
       </section>
 
@@ -251,73 +362,12 @@
 
     <!-- ===================================================== Netz und Kandidaten -->
     <section id="panel-netz" role="tabpanel" aria-labelledby="tab-netz" tabindex="0" hidden>
-      <div class="finder-raster">
-        <aside class="karte-seite" aria-labelledby="netz-ebenen-titel">
-          <h2 id="netz-ebenen-titel">Kartenebenen</h2>
-          <p class="klein">Alle Ebenen lassen sich gleichzeitig ein- und ausschalten. Nebenstraßen erscheinen ab Zoomstufe 13, Haltestellen werden in kleinen Maßstäben zusammengefasst.</p>
-          <fieldset class="layer-auswahl"><legend>Bestand und Flächen</legend>
-            <label><input type="checkbox" id="nl-bestand" checked><span class="layer-farbe" style="background:#111827" aria-hidden="true"></span>Bestehende P+R-Anlagen</label>
-            <label><input type="checkbox" id="nl-kandidaten" checked><span class="layer-farbe" style="background:#2e7d43" aria-hidden="true"></span>Freiflächen (Kandidaten)</label>
-            <label><input type="checkbox" id="nl-zwischen"><span class="layer-farbe" style="background:#d97706" aria-hidden="true"></span>Zwischennutzung</label>
-          </fieldset>
-          <fieldset class="layer-auswahl"><legend>Straßen</legend>
-            <label><input type="checkbox" id="nl-str-Autobahn" checked><span class="layer-farbe" style="background:#1d4ed8" aria-hidden="true"></span>Autobahn</label>
-            <label><input type="checkbox" id="nl-str-Bundesstraße" checked><span class="layer-farbe" style="background:#c2410c" aria-hidden="true"></span>Bundesstraße</label>
-            <label><input type="checkbox" id="nl-str-Hauptstraße" checked><span class="layer-farbe" style="background:#ca8a04" aria-hidden="true"></span>Hauptstraße</label>
-            <label><input type="checkbox" id="nl-str-Nebenstraße"><span class="layer-farbe" style="background:#9ca3af" aria-hidden="true"></span>Nebenstraße</label>
-            <label><input type="checkbox" id="nl-radnetz"><span class="layer-farbe" style="background:#0891b2" aria-hidden="true"></span>Radnetz</label>
-          </fieldset>
-          <fieldset class="layer-auswahl"><legend>ÖPNV</legend>
-            <label><input type="checkbox" id="nl-vm-S-Bahn" checked><span class="layer-farbe" style="background:#15803d" aria-hidden="true"></span>S-Bahn</label>
-            <label><input type="checkbox" id="nl-vm-U-Bahn" checked><span class="layer-farbe" style="background:#1e40af" aria-hidden="true"></span>U-Bahn</label>
-            <label><input type="checkbox" id="nl-vm-Straßenbahn" checked><span class="layer-farbe" style="background:#b91c1c" aria-hidden="true"></span>Straßenbahn</label>
-            <label><input type="checkbox" id="nl-vm-Bus"><span class="layer-farbe" style="background:#7c3aed" aria-hidden="true"></span>Bus</label>
-            <label><input type="checkbox" id="nl-haltestellen" checked>Haltestellen anzeigen</label>
-            <label for="nl-tageszeit" class="feld-label">Takt für</label>
-            <select id="nl-tageszeit"></select>
-            <label for="nl-mindesttakt" class="feld-label">Mindesttakt</label>
-            <select id="nl-mindesttakt">
-              <option value="">alle Takte</option>
-              <option value="5">mindestens alle 5 Minuten</option>
-              <option value="10">mindestens alle 10 Minuten</option>
-              <option value="15">mindestens alle 15 Minuten</option>
-              <option value="20">mindestens alle 20 Minuten</option>
-              <option value="30">mindestens alle 30 Minuten</option>
-            </select>
-            <label for="nl-linie" class="feld-label">Linie</label>
-            <select id="nl-linie"><option value="">alle Linien</option></select>
-          </fieldset>
-          <div class="legende" aria-label="Legende Realismus-Status">
-            <span class="klein">Realismus-Status der Freiflächen</span>
-            <ul class="legende-liste klein">
-              <li><span class="status-punkt status-geprüft" aria-hidden="true">✓</span> geprüft</li>
-              <li><span class="status-punkt status-plausibel" aria-hidden="true">≈</span> plausibel</li>
-              <li><span class="status-punkt status-hinweis" aria-hidden="true">?</span> hinweis (nur Karte)</li>
-              <li><span class="legende-ausschluss" aria-hidden="true"></span> ausgeschlossen (K.-o.)</li>
-            </ul>
-          </div>
-        </aside>
-        <div class="karte-haupt">
-          <div id="netz-karte" role="region" aria-label="Karte mit Bestands-P+R, Straßen, ÖPNV, Radnetz und Freiflächen"></div>
-          <p class="klein karte-hinweis" id="netz-status" aria-live="polite"></p>
-        </div>
-      </div>
-
-      <section class="karte-block" aria-labelledby="netz-detail-titel" id="netz-detail" hidden>
-        <div class="block-kopf">
-          <h2 id="netz-detail-titel" tabindex="-1">Steckbrief</h2>
-          <button type="button" class="knopf knopf-zweit" id="netz-detail-schliessen">Steckbrief schließen</button>
-        </div>
-        <div id="netz-detail-inhalt"></div>
-      </section>
+      <p class="klein netz-einleitung">Vollständige Listen zur Startkarte. Ein Klick auf eine Zeile öffnet die Fläche auf der Karte.</p>
 
       <section class="karte-block" aria-labelledby="kand-titel">
         <div class="block-kopf">
           <h2 id="kand-titel">Kandidaten aus der Pipeline</h2>
-          <div class="knopf-reihe">
-            <label for="kand-profil" class="feld-label">Gewichtungsprofil</label>
-            <select id="kand-profil"></select>
-          </div>
+          <p class="klein" id="kand-profil-hinweis">Gewichtung wie in der Filterleiste der Karte.</p>
         </div>
         <p class="klein">Nur Flächen mit Realismus-Status „geprüft“ oder „plausibel“, ohne K.-o.-Grund und mit bestandenem Vorfilter werden bewertet. Zeile öffnen mit Klick oder Eingabetaste.</p>
         <div class="tabelle-rahmen"><table id="kand-tabelle" class="tabelle"><caption class="sr-only">Ranking der Kandidaten</caption></table></div>
@@ -344,6 +394,7 @@
           </div>
         </div>
         <p class="klein">Entscheidungen werden lokal gespeichert und bleiben nach einem Neustart erhalten. „Geprüft“ setzt den Realismus-Status auf geprüft, „verworfen“ nimmt die Fläche aus dem Ranking, „offen“ stellt den automatisch ermittelten Status wieder her.</p>
+        <p id="review-status" class="klein" role="status"></p>
         <div class="tabelle-rahmen"><table id="review-tabelle" class="tabelle"><caption class="sr-only">Review-Liste</caption></table></div>
         <details><summary>Änderungsprotokoll</summary><div class="tabelle-rahmen"><table id="review-protokoll" class="tabelle"></table></div></details>
       </section>
