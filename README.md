@@ -37,6 +37,15 @@ Danach im Browser <http://127.0.0.1:8000/> öffnen. Die API-Dokumentation liegt 
 automatisch die mitgelieferte Kopie unter `app/static/vendor/`. Nur die OpenStreetMap-Hintergrundkarte
 braucht eine Verbindung – alle Fachebenen funktionieren ohne.
 
+### Ohne lokale Installation
+
+- **GitHub Codespaces:** Im Repository auf GitHub „Code“ → „Codespaces“ → „Create codespace“ wählen. Die Konfiguration in
+  `.devcontainer/` installiert die Pakete und startet den Server; der Prototyp öffnet sich in einem neuen Browser-Tab
+  (Port 8000). Benötigt ein GitHub-Konto mit Codespaces-Kontingent.
+- **Demo-Ansicht als einzelne HTML-Datei:** `python scripts/erzeuge_demo.py` rechnet alle Daten mit dem Backend vor und
+  schreibt `demo/pr_flaechenfinder_demo.html`. Gewichtung, Ranking, Steckbriefe und Vergleich sind darin voll interaktiv;
+  das Monitoring spielt einen vorberechneten Tag ab. Hintergrundkarte und Dateiexport fehlen in der Demo.
+
 Tests:
 
 ```bash

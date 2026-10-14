@@ -3,6 +3,9 @@
  * kommen vollständig aus der API und werden hier nur dargestellt. */
 "use strict";
 
+// Demo-Ansicht (scripts/erzeuge_demo.py): vorberechnete Daten, ohne Hintergrundkarte und Dateiexport
+const DEMO = window.PR_DEMO === true;
+
 // ====================================================================== Hilfsfunktionen
 const $ = (sel, wurzel = document) => wurzel.querySelector(sel);
 const $$ = (sel, wurzel = document) => Array.from(wurzel.querySelectorAll(sel));
@@ -153,7 +156,7 @@ const LAYER_DEFINITION = [
   { name: "gewaesser", label: "Main", farbe: "#60a5fa", an: true },
   { name: "referenzorte", label: "Referenzorte", farbe: "#334155", an: true },
   { name: "osm", label: "Hintergrundkarte OpenStreetMap (online)", farbe: "#e5e7eb", an: true },
-];
+].filter((d) => !(DEMO && d.name === "osm"));
 
 // Viridis-Skala, farbfehlsichtigkeitsfreundlich
 const VIRIDIS = ["#440154", "#3b528b", "#21918c", "#5ec962", "#fde725"];
@@ -263,7 +266,7 @@ async function ladeLayer() {
   });
   // Reihenfolge der Darstellung: Flächen zuletzt, damit sie anklickbar oben liegen
   ["osm", "stadtgebiet", "gewaesser", "schutzgebiete_ug", "schutzgebiete_sg", "pendlerquellen", "radwege", "einfallachsen", "pr_bestand", "flaechenkandidaten", "sharing_stationen", "haltestellen", "referenzorte"]
-    .forEach((n) => { if ($(`#layer-${n}`).checked) zustand.layer[n].addTo(zustand.karte); });
+    .forEach((n) => { if ($(`#layer-${n}`)?.checked) zustand.layer[n].addTo(zustand.karte); });
 }
 
 function faerbeFlaechen() {
@@ -359,8 +362,8 @@ async function ladeRanking() {
   try {
     zustand.ranking = await api(`/api/ranking?${q}`);
   } catch (e) { zeigeFehler(`Ranking konnte nicht geladen werden: ${e.message}`); return; }
-  $("#export-csv").href = `/api/export/ranking.csv?${q}`;
-  $("#export-geojson").href = `/api/export/ranking.geojson?${q}`;
+  if ($("#export-csv")) $("#export-csv").href = `/api/export/ranking.csv?${q}`;
+  if ($("#export-geojson")) $("#export-geojson").href = `/api/export/ranking.geojson?${q}`;
   zeichneRanking();
   faerbeFlaechen();
   if (zustand.aktiveFlaeche && !$("#steckbrief").hidden) ladeSteckbrief(zustand.aktiveFlaeche, false);
