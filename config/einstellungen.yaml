@@ -400,3 +400,27 @@ review:
 datenlage:
   ausgabe: "berichte/datenlage.md"
   groessenklassen_m2: [2000, 5000, 10000, 20000]
+
+# ============================================================================ Basiskarte (Protomaps, selbst gehostet)
+basiskarte:
+  # Auszug für die Metropolregion FrankfurtRheinMain (Näherung der Ausdehnung: Limburg bis Fulda-Rand,
+  # Vogelsberg bis Bergstraße/Odenwald, Rheinhessen bis Aschaffenburg/Miltenberg) – [West, Süd, Ost, Nord] in WGS84
+  bbox: [7.75, 49.38, 9.80, 50.85]
+  minzoom: 0
+  maxzoom: 15
+  datei: "data/basemap/rhein-main.pmtiles"
+  # Synthetischer Test-Auszug (scripts/erzeuge_testbasemap.py); wird nur genutzt, wenn der echte Auszug fehlt
+  # und Testdaten angezeigt werden dürfen
+  testdatei: "data/basemap/rhein-main-testdaten.pmtiles"
+  metadatei: "data/basemap/rhein-main.meta.json"     # Build-Datum und Quelle, schreibt scripts/build_basemap.sh
+  glyphen_verzeichnis: "data/basemap/glyphen"        # Schrift-Glyphen für Kartenlabels (lokal erzeugt)
+  quelle: "https://build.protomaps.com"              # tägliche Protomaps-Builds (OpenStreetMap, ODbL)
+  builds_liste: "https://build-metadata.protomaps.dev/builds.json"
+  standardstil: stadt                                # stadt | schematisch
+  attribution: "© OpenStreetMap-Mitwirkende, Daten unter ODbL · Kartenkacheln: Protomaps"
+  # Eigene Ebenen erst ab sinnvollen Zoomstufen (kein Kartenrauschen)
+  mindestzoom:
+    bestand: 11
+    flaechen: 13
+  # Stufen der P+R-Symbolgröße nach Stellplätzen: [ab Stellplätzen, Durchmesser in px]
+  bestand_symbolgroessen: [[0, 22], [150, 26], [400, 30], [800, 34]]

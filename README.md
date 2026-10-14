@@ -128,6 +128,10 @@ geschrieben). Es gibt keine Datenbank.
 | POST | `/api/monitoring/einstellungen` | Intervall, Zeitraffer, Wetter, Pause |
 | GET | `/api/wirkung/{standort}` | Vorher-Nachher-Analyse |
 | PUT | `/api/wirkung/{standort}/befragung` | Befragungsergebnis (Verlagerungsanteil) |
+| GET | `/api/basiskarte` | Kartenauszug: vorhanden, Gebiet, Zoomstufen, Build-Datum, Quelle |
+| GET, HEAD | `/karte/basemap.pmtiles` | PMTiles-Auszug mit HTTP-Range-Requests |
+| GET | `/karte/stil/stadt.json`, `/karte/stil/schematisch.json` | MapLibre-Stil mit den Farben aus dem Theme |
+| GET | `/karte/glyphen/{schrift}/{bereich}.pbf` | Schrift-Glyphen für Kartenlabels |
 
 ## Konfiguration
 
@@ -287,6 +291,65 @@ Die Netzkarte zeichnet alle Vektorebenen auf Canvas, fasst Haltestellen mit Leaf
 blendet Nebenstraßen erst ab Zoomstufe 13 ein. Mit den Testdaten (rund 6.600 Elemente, davon 5.200 Straßenabschnitte)
 gemessen in Chromium ohne Grafikbeschleunigung: Laden und Zeichnen 1,5 s, Verschieben mit der Maus 56 Bilder/s,
 Zoomwechsel etwa 140 ms.
+
+## Stadtkarte (Protomaps, selbst gehostet)
+
+Unter den eigenen Ebenen liegt eine Stadtkarte aus einem **Protomaps-Auszug** (PMTiles, OpenStreetMap-Daten).
+Der eigene Server liefert die Datei mit HTTP-Range-Requests aus, MapLibre GL zeichnet sie; zur Laufzeit wird
+kein externer Kartendienst angefragt. Liegt der Auszug lokal vor, funktioniert die Karte ohne Internetzugang.
+
+**Auszug erzeugen (einmalig, braucht Internet):**
+
+```bash
+scripts/build_basemap.sh                  # neuester Protomaps-Build
+BUILD=20261013 scripts/build_basemap.sh   # bestimmter Build
+```
+
+Das Skript nimmt Gebiet (`basiskarte.bbox`, Metropolregion FrankfurtRheinMain) und Zoomstufen 0–15 aus
+`config/einstellungen.yaml`, ruft `pmtiles extract` auf (installiert go-pmtiles bei Bedarf mit Go), prüft danach
+mit `pmtiles show` und `python -m app.basiskarte pruefen`, ob die Datei lesbar ist und alle Zoomstufen enthält,
+und schreibt Build-Datum und Quelle nach `data/basemap/rhein-main.meta.json`. Diese Angaben erscheinen im
+Datenlage-Bericht unter „Metadaten“. Der Auszug liegt in `data/basemap/` und ist nicht im Git-Repository.
+Ohne Auszug zeigt die Oberfläche die schematische Karte und einen Hinweis.
+
+**Test-Auszug:** `python scripts/erzeuge_testbasemap.py` erzeugt aus den Testdaten einen synthetischen
+Auszug im Protomaps-Schema (`data/basemap/rhein-main-testdaten.pmtiles`, rund 2,5 MB, Teststraßen und
+Testgebäude). Er wird nur verwendet, wenn der echte Auszug fehlt und Testdaten angezeigt werden, und ist im
+Kartenfuß als „Test-Kartenauszug (synthetisch)“ gekennzeichnet. Die Demo-Ansicht bettet ihn ein.
+
+**Stil:** `app/static/map/style-stadt.json` und `style-schematisch.json` enthalten keine Farbwerte, nur
+Verweise wie `theme:basiskarte.wasser`; der Server setzt sie aus `traffiq_theme.yaml` (Abschnitt `basiskarte`) ein.
+Landfläche, Wasser, sehr helles Grün für Wald und Parks, Gebäude ohne Umrandung, Autobahn und Bundesstraße in
+dunklem Grau mit Breitenstufen, Nebenstraßen weiß mit grauer Kontur, Bahn gestrichelt, feine Stadt- und
+Kreisgrenzen. Labels: Hauptstraßen ab Zoomstufe 12, alle Straßennamen ab 13, Stadtteile und Orte in Versalien
+mit Buchstabenabstand, alles in Dunkelblau mit weißem Halo (Kontrast im Theme-Test geprüft). POI nur Bahnhöfe und
+Haltestellen. Sind eigene Ebenen aktiv, treten Basislabels zurück (mehr Abstand, nachrangige Labels eine Stufe später).
+
+*Zoomstufen* gelten in der Zählung der Oberfläche (Leaflet, 256-px-Kacheln). MapLibre zählt eine Stufe
+niedriger; der Stil ist darauf abgestimmt (Erklärung in den Metadaten der Stildatei).
+
+**Schrift der Labels:** MapLibre braucht Glyphen-Dateien. `python -m app.glyphen` erzeugt sie lokal aus Arial
+(unter Windows vorhanden); fehlt Arial, aus dem metrisch gleichen Liberation Sans. Fehlen die Dateien, erzeugt
+der Server sie beim ersten Kartenaufruf (Paket `freetype-py`).
+
+**Eigene Ebenen darüber:** Bestands-P+R als Kreis mit weißem „P“, Größe nach Stellplätzen gestuft
+(`basiskarte.bestand_symbolgroessen`); Kandidaten- und Zwischennutzungsflächen mit Farben aus `map_layers`;
+alle eigenen Linien und Flächen mit weißer Halo-Linie. Bestand erscheint ab Zoomstufe 11, Flächen ab 13
+(`basiskarte.mindestzoom`); ein Hinweis erklärt, wenn eingeschaltete Flächen erst beim Hineinzoomen erscheinen.
+
+**Kartenstil:** Schalter „Stadtkarte“ (Standard) und „Schematisch“ (neutraler Grund, nur Netz und Flächen);
+der Wechsel wirkt sofort und bleibt nach dem Neuladen erhalten.
+
+**Attribution:** „© OpenStreetMap-Mitwirkende, Daten unter ODbL · Kartenkacheln: Protomaps“ steht fest im
+Kartenfuß, auch in der schematischen Ansicht, und lässt sich nicht ausblenden.
+
+**Bibliotheken:** MapLibre GL JS 5.24.0, pmtiles 4.5.0 und maplibre-gl-leaflet 0.1.4 werden versionsfest
+per CDN (mit Integritätsprüfung) geladen; Kopien unter `app/static/vendor/` springen ein, wenn das CDN nicht
+erreichbar ist.
+
+**Lizenzen:** Kartendaten © OpenStreetMap-Mitwirkende, ODbL 1.0 (Namensnennung im Kartenfuß Pflicht);
+Protomaps-Basiskarten-Schema BSD-3-Clause/CC0; MapLibre GL JS BSD-3-Clause; pmtiles BSD-3-Clause;
+maplibre-gl-leaflet ISC; go-pmtiles BSD-3-Clause; Liberation Sans SIL Open Font License (nur als Ersatz für Arial).
 
 ## Datenschutz
 

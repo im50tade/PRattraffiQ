@@ -10,3 +10,7 @@ numpy>=1.26
 # Tests
 pytest>=8.0
 httpx>=0.27
+# Basiskarte (Protomaps): Glyphen erzeugen und Test-Auszug schreiben
+freetype-py>=2.4
+pmtiles>=3.4
+mapbox-vector-tile>=2.0

@@ -5,7 +5,7 @@
 
 const ez = {
   konfig: null, testdaten: true, karte: null, renderer: null, svgRenderer: null,
-  layer: {}, daten: {}, geladen: false, aktuell: null, ranking: null,
+  layer: {}, daten: {}, geladen: false, aktuell: null, ranking: null, basis: null, labelStandard: {},
 };
 const MAX_EBENEN = 7;
 const STATUS_TEXT = { "geprüft": "geprüft", plausibel: "plausibel", hinweis: "Hinweis", ausgeschlossen: "ausgeschlossen" };
@@ -42,6 +42,7 @@ function initTestdatenSchalter() {
   cb.addEventListener("change", () => {
     try { localStorage.setItem("pr-testdaten-anzeigen", cb.checked ? "1" : "0"); } catch (_) { /* Speicher gesperrt */ }
     anwenden();
+    basiskarteStatus(true).then(() => setzeKartenstil(kartenstil()));
     if (ez.geladen) ladeNetzDaten();
     if (aktiverReiter() === "panel-datenlage") ladeDatenlage();
   });
@@ -105,17 +106,64 @@ function initNetzKarte() {
   ez.svgRenderer = L.svg();
   ez.karte = L.map("netz-karte", { preferCanvas: true, renderer: ez.renderer, maxZoom: 19, minZoom: 8, zoomControl: false }).setView(k.mitte, k.zoom);
   L.control.zoom({ position: "topright", zoomInTitle: "Vergrößern", zoomOutTitle: "Verkleinern" }).addTo(ez.karte);
-  if (!(typeof DEMO !== "undefined" && DEMO)) {
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, className: "kachel-gedaempft", attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
-    }).addTo(ez.karte);
+  ez.basis = basiskarteLayer();
+  if (ez.basis) {
+    ez.basis.addTo(ez.karte);
+    const m = ez.basis.getMaplibreMap();
+    m.on("styledata", basislabelsNachrang);
+    m.on("error", (e) => console.warn("Basiskarte:", e?.error?.message || e));
   }
+  festeAttribution(ez.karte);
   L.control.scale({ imperial: false, position: "bottomright" }).addTo(ez.karte);
   ez.karte.on("zoomend", sichtbarkeit);
+  initKartenstil();
+}
+
+// ---------------------------------------------------------------------- Kartenstil Stadtkarte / Schematisch
+async function initKartenstil() {
+  const status = await basiskarteStatus();
+  const radios = $$('input[name="kartenstil"]');
+  const stadt = radios.find((r) => r.value === "stadt");
+  let gewaehlt = kartenstil();
+  if (!status.vorhanden) {
+    stadt.disabled = true;
+    stadt.closest("label").title = status.hinweis || "Kein Kartenauszug vorhanden";
+    if (gewaehlt === "stadt") { gewaehlt = "schematisch"; ez.basis?.getMaplibreMap()?.setStyle(stilAdresse("schematisch")); }
+    zeigeKartenhinweis(`Stadtkarte nicht verfügbar: ${status.hinweis || "kein Kartenauszug"} Angezeigt wird die schematische Karte.`);
+  }
+  radios.forEach((r) => {
+    r.checked = r.value === gewaehlt;
+    r.addEventListener("change", () => { if (r.checked) setzeKartenstil(r.value); });
+  });
+  document.body.dataset.kartenstil = gewaehlt;
+  document.addEventListener("kartenstil", (e) => { document.body.dataset.kartenstil = e.detail; });
+}
+
+function zeigeKartenhinweis(text) {
+  const el = $("#karten-hinweis");
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+}
+
+/** Bei aktiven eigenen Ebenen treten Basislabels zurück: mehr Abstand, nachrangige Labels erst eine Zoomstufe später. */
+function basislabelsNachrang() {
+  const m = ez.basis?.getMaplibreMap?.();
+  if (!m || !m.isStyleLoaded()) return;
+  const eigene = $$("[data-ebene]").some((cb) => cb.checked);
+  (m.getStyle().layers || []).forEach((l) => {
+    const meta = l.metadata || {};
+    if (!meta["pr:label"]) return;
+    if (!(l.id in ez.labelStandard)) ez.labelStandard[l.id] = { minzoom: l.minzoom ?? 0, padding: l.layout?.["text-padding"] ?? 2 };
+    const std = ez.labelStandard[l.id];
+    m.setLayoutProperty(l.id, "text-padding", eigene ? std.padding + 6 : std.padding);
+    if (meta["pr:nachrang"]) m.setLayerZoomRange(l.id, std.minzoom + (eigene ? 1 : 0), 24);
+  });
 }
 
 async function zeigeKarte() {
   if (!ez.karte) {
+    await basiskarteStatus();
     initNetzKarte();
     await ladeNetzDaten();
   }
@@ -157,11 +205,13 @@ function sichtbarkeit() {
   if (!ez.karte) return;
   const zoom = ez.karte.getZoom();
   const an = (e) => $(`[data-ebene="${e}"]`)?.checked;
+  const mz = BASISKARTE.status?.mindestzoom || { bestand: 11, flaechen: 13 };
+  const flaechen = zoom >= mz.flaechen;
   const regeln = {
-    bestand: an("bestand"), radnetz: an("radnetz"), schutz: an("schutz"),
+    bestand: an("bestand") && zoom >= mz.bestand, radnetz: an("radnetz"), schutz: an("schutz") && flaechen,
     "str-Autobahn": an("autobahn"), "str-Bundesstraße": an("haupt"), "str-Hauptstraße": an("haupt"),
     "str-Nebenstraße": an("neben") && zoom >= (ez.konfig.strassen_mindestzoom["Nebenstraße"] ?? 0),
-    kandidaten: an("kandidaten"), zwischen: an("zwischen"), ausschluss: an("ausschluss"),
+    kandidaten: an("kandidaten") && flaechen, zwischen: an("zwischen") && flaechen, ausschluss: an("ausschluss") && flaechen,
     linien: true, halte: true, top10: true,
   };
   Object.entries(regeln).forEach(([name, sichtbar]) => {
@@ -171,6 +221,32 @@ function sichtbarkeit() {
     if (!sichtbar && ez.karte.hasLayer(l)) l.remove();
   });
   if (ez.layer.top10) ez.layer.top10.bringToFront?.();
+  const zuKlein = ["kandidaten", "zwischen", "ausschluss", "schutz"].filter((e) => an(e)).length && !flaechen;
+  const hinweis = $("#zoom-hinweis");
+  if (hinweis) {
+    hinweis.hidden = !zuKlein;
+    hinweis.textContent = zuKlein ? `Flächen erscheinen ab Zoomstufe ${mz.flaechen} (aktuell ${Math.round(zoom)}). Bitte hineinzoomen.` : "";
+  }
+  basislabelsNachrang();
+}
+
+/** Weiße Halo-Linie unter einer Linien- oder Flächenebene, damit sie auf jedem Hintergrund lesbar bleibt. */
+function mitHalo(daten, optionen) {
+  const stil = typeof optionen.style === "function" ? optionen.style : () => optionen.style || {};
+  const halo = L.geoJSON(daten, {
+    renderer: optionen.renderer || ez.renderer, interactive: false,
+    style: (f) => { const s = stil(f); return { color: T("basiskarte-label-halo"), weight: (s.weight ?? 2) + 3, opacity: 0.9, fill: false, dashArray: null, lineCap: "round", lineJoin: "round" }; },
+  });
+  const haupt = L.geoJSON(daten, optionen);
+  const gruppe = L.featureGroup([halo, haupt]);
+  gruppe.haupt = haupt;
+  return gruppe;
+}
+
+/** Symbolgröße der P+R-Anlage nach Stellplatzzahl (Stufen aus der Konfiguration). */
+function bestandGroesse(stellplaetze) {
+  const stufen = BASISKARTE.status?.bestand_symbolgroessen || [[0, 24]];
+  return stufen.filter(([ab]) => (stellplaetze ?? 0) >= ab).pop()[1];
 }
 
 // ---------------------------------------------------------------------- Bestand: Symbol mit P
@@ -179,8 +255,9 @@ function zeichneBestand() {
     pointToLayer: (f, ll) => {
       const p = f.properties;
       const zusatz = BESTAND_STATUS_SYMBOL[p.status] ? `<span class="pr-zusatz">${BESTAND_STATUS_SYMBOL[p.status]}</span>` : "";
+      const g = bestandGroesse(p.stellplaetze);
       return L.marker(ll, {
-        icon: L.divIcon({ className: `pr-symbol pr-${p.status}`, html: `<span>P</span>${zusatz}`, iconSize: [24, 24] }),
+        icon: L.divIcon({ className: `pr-symbol pr-${p.status}`, html: `<span style="--groesse:${g}px">P</span>${zusatz}`, iconSize: [g, g] }),
         title: `${p.name}, ${p.status_label}`, alt: `P+R-Anlage ${p.name}`, keyboard: true,
       });
     },
@@ -232,7 +309,7 @@ function zeichneStrassen() {
   const nachKlasse = {};
   ez.daten.strassen.features.forEach((f) => { (nachKlasse[f.properties.klasse] ||= []).push(f); });
   Object.keys(STRASSEN_STIL).forEach((klasse) => {
-    ersetze(`str-${klasse}`, L.geoJSON({ type: "FeatureCollection", features: nachKlasse[klasse] || [] }, {
+    ersetze(`str-${klasse}`, mitHalo({ type: "FeatureCollection", features: nachKlasse[klasse] || [] }, {
       renderer: ez.renderer,
       style: (f) => ({ ...STRASSEN_STIL[klasse](), weight: klasse === "Autobahn" && f.properties.dtv_kfz ? Math.max(5, f.properties.breite) : STRASSEN_STIL[klasse]().weight }),
       onEachFeature: (f, l) => {
@@ -245,7 +322,7 @@ function zeichneStrassen() {
 }
 
 function zeichneRadnetz() {
-  ersetze("radnetz", L.geoJSON(ez.daten.radnetz, {
+  ersetze("radnetz", mitHalo(ez.daten.radnetz, {
     renderer: ez.renderer, style: () => ({ color: T("karte-radnetz"), weight: 2, dashArray: "4 4" }),
     onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name || "Radweg")} · ${esc(f.properties.art)}`, { sticky: true }),
   }));
@@ -253,7 +330,7 @@ function zeichneRadnetz() {
 }
 
 function zeichneSchutz() {
-  ersetze("schutz", L.geoJSON(ez.daten.schutz, {
+  ersetze("schutz", mitHalo(ez.daten.schutz, {
     renderer: ez.svgRenderer,
     style: () => ({ color: T("karte-schutzgebiet"), weight: 1.5, className: "schraffur-schutz", fillOpacity: 1 }),
     onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.name)}<br>${esc(f.properties.art)}${f.properties.testdaten ? " · Testdaten" : ""}`, { sticky: true }),
@@ -291,7 +368,7 @@ function zeichneOepnv() {
     return f.mittel.has(p.verkehrsmittel) && (!f.linie || p.linie === f.linie) && (!f.takt || (p.takt[f.tz] && p.takt[f.tz] <= f.takt));
   });
   if (ez.layer.linien) ez.layer.linien.remove();
-  ez.layer.linien = L.geoJSON({ type: "FeatureCollection", features: linien }, {
+  ez.layer.linien = mitHalo({ type: "FeatureCollection", features: linien }, {
     renderer: ez.renderer,
     style: (x) => {
       const vm = x.properties.verkehrsmittel;
@@ -346,7 +423,7 @@ function zeichneKandidatenKarte() {
   const normal = feats.filter((f) => !f.properties.ausgeschlossen);
   const raus = feats.filter((f) => f.properties.ausgeschlossen);
   const tooltip = (p) => `<strong>${esc(p.name)}</strong> (${esc(p.typ_label)})<br>Status: ${esc(STATUS_TEXT[p.status])}${p.rang ? `<br>Rang ${p.rang}, Score ${zahl(p.gesamtscore, 1)}` : ""}${p.testdaten ? "<br>Testdaten" : ""}`;
-  const flaechen = L.geoJSON({ type: "FeatureCollection", features: normal }, {
+  const flaechen = mitHalo({ type: "FeatureCollection", features: normal }, {
     renderer: ez.renderer, style: (f) => kandidatenStil(f.properties),
     onEachFeature: (f, l) => {
       ez.kandidatenLayer[f.properties.id] = l;
@@ -358,7 +435,7 @@ function zeichneKandidatenKarte() {
     .bindTooltip(tooltip(f.properties)).on("click", () => zeigeKandidat(f.properties.id, false)));
   ersetze("kandidaten", L.featureGroup([flaechen, ...symbole]));
 
-  const ausFlaechen = L.geoJSON({ type: "FeatureCollection", features: raus }, {
+  const ausFlaechen = mitHalo({ type: "FeatureCollection", features: raus }, {
     renderer: ez.renderer, style: (f) => kandidatenStil(f.properties, "ausschluss"),
     onEachFeature: (f, l) => {
       ez.kandidatenLayer[f.properties.id] = l;
@@ -370,7 +447,7 @@ function zeichneKandidatenKarte() {
     .bindTooltip(`<strong>${esc(f.properties.name)}</strong> – ausgeschlossen<br>${esc(f.properties.grund)}`).on("click", () => zeigeKandidat(f.properties.id, false)));
   ersetze("ausschluss", L.featureGroup([ausFlaechen, ...kreuze]));
 
-  ersetze("zwischen", L.geoJSON({ type: "FeatureCollection", features: feats.filter((f) => f.properties.zwischennutzung) }, {
+  ersetze("zwischen", mitHalo({ type: "FeatureCollection", features: feats.filter((f) => f.properties.zwischennutzung) }, {
     renderer: ez.renderer, style: (f) => kandidatenStil(f.properties, "zwischen"),
     onEachFeature: (f, l) => {
       l.bindTooltip(`<strong>${esc(f.properties.name)}</strong><br>Zwischennutzung: ${esc(f.properties.zwischennutzung)} (${zahl(f.properties.zwischennutzung_score, 1)})`, { sticky: true });
@@ -626,7 +703,8 @@ async function ladeDatenlage() {
   try { d = await api(mitTd("/api/datenlage")); } catch (e) { zeigeFehler(e.message); return; }
   const tab = (kopf, zeilen) => `<div class="tabelle-rahmen"><table class="tabelle"><thead><tr>${kopf.map((k, i) => `<th scope="col" class="${i ? "" : "links"}">${esc(k)}</th>`).join("")}</tr></thead>
     <tbody>${zeilen.map((z) => `<tr>${z.map((x, i) => `<td class="${i ? "" : "links"}">${x}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
-  $("#datenlage").innerHTML = Object.entries(d.gruppen).map(([, g]) => {
+  const meta = `<section class="karte-block"><h2>Metadaten</h2>${tab(["Merkmal", "Wert"], (d.metadaten || []).map((m) => [esc(m.merkmal), `<span class="links-text">${esc(m.wert)}</span>`]))}</section>`;
+  $("#datenlage").innerHTML = meta + Object.entries(d.gruppen).map(([, g]) => {
     const b = g.bestand;
     const o = g.oepnv;
     const vms = [...new Set([...Object.keys(o.haltestellen_je_verkehrsmittel), ...Object.keys(o.linien_je_verkehrsmittel)])].sort();

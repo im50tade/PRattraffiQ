@@ -13,6 +13,13 @@ logo:
 schrift:
   familie: "Arial, Helvetica, sans-serif"  # Platzhalter bis zur Hausschrift
   groesse_fliesstext_px: 16
+  # Kartenlabels: MapLibre braucht die Schrift als Glyphen-Dateien. Sie werden lokal aus der ersten
+  # vorhandenen Schriftdatei erzeugt (Arial; sonst das metrisch gleiche Liberation Sans).
+  karte_regular: "Arial Regular"
+  karte_fett: "Arial Bold"
+  karte_dateien:
+    "Arial Regular": [arial.ttf, Arial.ttf, LiberationSans-Regular.ttf, Arimo-Regular.ttf]
+    "Arial Bold": [arialbd.ttf, "Arial Bold.ttf", LiberationSans-Bold.ttf, Arimo-Bold.ttf]
 
 basis:
   text: "#162a6b"
@@ -39,6 +46,23 @@ map_layers:
   zwischennutzung: "#009c84"    # Vorschlag: gestrichelter Rand
   schutzgebiet: "#009c84"       # Vorschlag: Schraffur
   ausschluss: "#e30613"
+
+# Stadtkarte (Protomaps-Basiskarte) – Stil in app/static/map/style-stadt.json verweist auf diese Werte.
+basiskarte:
+  land: "#f3f4f6"
+  wasser: "#99d8f3"
+  gruen: "#99d7ce"              # Wald und Parks
+  gruen_deckkraft: 0.45         # nur sehr hell
+  gebaeude: "#c8cbcd"           # ohne Umrandung
+  strasse_gross: "#6f7478"      # Vorschlag: Autobahn und Bundesstraße, dunkler Grauton aus dem Grau abgeleitet
+  strasse_klein: "#ffffff"      # Nebenstraßen weiß …
+  strasse_kontur: "#90969a"     # … mit feiner grauer Kontur
+  bahn: "#90969a"               # gestrichelt
+  grenze: "#90969a"             # Stadt- und Kreisgrenzen, fein
+  label: "#162a6b"
+  label_halo: "#ffffff"
+  ort_buchstabenabstand_em: 0.12
+  schematisch_grund: "#ffffff"  # Kartenstil „Schematisch“: neutraler Grund
 
 status:
   geprueft: "#009c84"
@@ -71,4 +95,10 @@ textpaare:
   - [akzent.rot, basis.hintergrund]
   - ["sekundaertext", basis.hintergrund]
   - ["sekundaertext", basis.hintergrund_sekundaer]
+  # Kartenlabels: immer Dunkelblau mit weißem Halo; die Paare gelten auch ohne Halo auf den Kartenflächen
+  - [basiskarte.label, basiskarte.label_halo]
+  - [basiskarte.label, basiskarte.land]
+  - [basiskarte.label, basiskarte.wasser]
+  - [basiskarte.label, "basiskarte-gruen"]
+  - [basiskarte.label, basiskarte.gebaeude]
 sekundaertext_anteil: 0.75        # Sekundärtext = Textfarbe 75 % + Hintergrund 25 %

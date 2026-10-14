@@ -7,3 +7,5 @@ data/befragungen.json
 demo/
 data/review.sqlite
 berichte/
+data/basemap/*
+!data/basemap/LIESMICH.md

@@ -1,0 +1,17 @@
+{
+ "version": 8,
+ "name": "traffiQ Schematisch",
+ "metadata": {
+  "hinweis": "Neutraler Grund ohne Basiskarte; nur eigene Netz- und Flächenebenen liegen darüber."
+ },
+ "sources": {},
+ "layers": [
+  {
+   "id": "hintergrund",
+   "type": "background",
+   "paint": {
+    "background-color": "theme:basiskarte.schematisch_grund"
+   }
+  }
+ ]
+}

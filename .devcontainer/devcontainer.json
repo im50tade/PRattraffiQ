@@ -1,7 +1,8 @@
 {
   "name": "P+R Flächenfinder Rhein-Main",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
-  "postCreateCommand": "pip install -r requirements.txt",
+  "features": { "ghcr.io/devcontainers/features/go:1": {} },
+  "postCreateCommand": "pip install -r requirements.txt && python scripts/erzeuge_testbasemap.py",
   "postAttachCommand": "uvicorn app.main:app --host 0.0.0.0 --port 8000",
   "forwardPorts": [8000],
   "portsAttributes": {

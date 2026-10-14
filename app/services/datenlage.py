@@ -9,6 +9,7 @@ from collections import Counter
 from datetime import datetime
 from typing import Any, Mapping
 
+from .. import basiskarte
 from ..domain import kandidaten as kd
 from .datenbasis import Datenbasis
 from .kandidatenpipeline import KandidatenPipeline
@@ -76,11 +77,42 @@ def erstelle(datenbasis: Datenbasis, pipeline: KandidatenPipeline | None, konfig
             "fehlende_quellen": [QUELLEN_LABEL.get(q["schluessel"], q["schluessel"]) for q in quellen if not q["vorhanden"]],
             "importfehler": list(g.fehler),
         }
-    return {"erstellt": datetime.now().isoformat(timespec="seconds"), "gruppen": gruppen}
+    erstellt = datetime.now().isoformat(timespec="seconds")
+    return {"erstellt": erstellt, "metadaten": metadaten(erstellt, "test" in datenbasis.gruppen), "gruppen": gruppen}
+
+
+def _bbox(b) -> str:
+    return f"W {b[0]:.2f}, S {b[1]:.2f}, O {b[2]:.2f}, N {b[3]:.2f}"
+
+
+def metadaten(erstellt: str, testdaten: bool) -> list[dict]:
+    """Metadatentabelle: Stand des Berichts und der Basiskarte (Build-Datum und Quelle aus build_basemap.sh)."""
+    try:
+        bk = basiskarte.status(testdaten)
+    except (KeyError, OSError, ValueError) as exc:  # fehlender Konfigurationsabschnitt oder unlesbare Datei
+        return [{"merkmal": "Bericht erstellt", "wert": erstellt.replace("T", " ")},
+                {"merkmal": "Basiskarte", "wert": f"nicht auswertbar ({exc})"}]
+    zeilen = [{"merkmal": "Bericht erstellt", "wert": erstellt.replace("T", " ")}]
+    if not bk["vorhanden"]:
+        return zeilen + [{"merkmal": "Basiskarte", "wert": bk.get("hinweis", "nicht vorhanden")},
+                         {"merkmal": "Basiskarte: konfiguriertes Gebiet", "wert": _bbox(bk["bbox_konfiguration"])},
+                         {"merkmal": "Basiskarte: konfigurierte Zoomstufen", "wert": "{}–{}".format(*bk["zoom_konfiguration"])}]
+    return zeilen + [
+        {"merkmal": "Basiskarte: Datei", "wert": f"{bk['datei']} ({bk['groesse_mb']} MB)" + (" – Testdaten (synthetisch)" if bk["testdaten"] else "")},
+        {"merkmal": "Basiskarte: Quelle", "wert": bk["quelle"] or "unbekannt"},
+        {"merkmal": "Basiskarte: Build-Datum", "wert": bk["build_datum"] or ("entfällt (synthetisch)" if bk["testdaten"] else "unbekannt")},
+        {"merkmal": "Basiskarte: Auszug erstellt", "wert": (bk["erstellt"] or "unbekannt").replace("T", " ")},
+        {"merkmal": "Basiskarte: Gebiet", "wert": _bbox(bk["bbox"])},
+        {"merkmal": "Basiskarte: Zoomstufen", "wert": f"{bk['minzoom']}–{bk['maxzoom']}"},
+        {"merkmal": "Basiskarte: Lizenz", "wert": bk["lizenz"] if bk["testdaten"] else bk["attribution"]},
+    ]
 
 
 def als_markdown(bericht: dict) -> str:
-    z = [f"# Datenlage P+R Flächenfinder Rhein-Main", "", f"Erstellt: {bericht['erstellt'].replace('T', ' ')}", ""]
+    z = [f"# Datenlage P+R Flächenfinder Rhein-Main", "", f"Erstellt: {bericht['erstellt'].replace('T', ' ')}", "",
+         "## Metadaten", "", "| Merkmal | Wert |", "|---|---|"]
+    z += [f"| {m['merkmal']} | {m['wert']} |" for m in bericht.get("metadaten", [])]
+    z.append("")
     for name, g in bericht["gruppen"].items():
         titel = "Testdaten (synthetisch)" if g["testdaten"] else "Echte Quellen"
         z += [f"## {titel}", ""]

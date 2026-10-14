@@ -1,0 +1,1124 @@
+{
+ "version": 8,
+ "name": "traffiQ Stadtkarte",
+ "metadata": {
+  "hinweis": "Vorlage: Werte 'theme:…' setzt der Server aus config/traffiq_theme.yaml ein; {server} wird zur eigenen Adresse.",
+  "zoomstufen": "Zoomstufen sind auf die Zählung der Oberfläche (Leaflet, 256-px-Kacheln) abgestimmt: MapLibre zählt mit 512-px-Kacheln eine Stufe niedriger. minzoom 12 hier = Zoomstufe 13 in der Oberfläche."
+ },
+ "glyphs": "{server}/karte/glyphen/{fontstack}/{range}.pbf",
+ "sources": {
+  "protomaps": {
+   "type": "vector",
+   "url": "pmtiles://{server}/karte/basemap.pmtiles",
+   "attribution": "{attribution}"
+  }
+ },
+ "layers": [
+  {
+   "id": "hintergrund",
+   "type": "background",
+   "paint": {
+    "background-color": "theme:basiskarte.land"
+   }
+  },
+  {
+   "id": "land",
+   "type": "fill",
+   "source": "protomaps",
+   "source-layer": "earth",
+   "paint": {
+    "fill-color": "theme:basiskarte.land"
+   }
+  },
+  {
+   "id": "gruen-landbedeckung",
+   "type": "fill",
+   "source": "protomaps",
+   "source-layer": "landcover",
+   "maxzoom": 11,
+   "filter": [
+    "in",
+    [
+     "get",
+     "kind"
+    ],
+    [
+     "literal",
+     [
+      "forest",
+      "grassland",
+      "scrub"
+     ]
+    ]
+   ],
+   "paint": {
+    "fill-color": "theme:basiskarte.gruen",
+    "fill-opacity": "theme:basiskarte.gruen_deckkraft"
+   }
+  },
+  {
+   "id": "gruen",
+   "type": "fill",
+   "source": "protomaps",
+   "source-layer": "landuse",
+   "filter": [
+    "in",
+    [
+     "get",
+     "kind"
+    ],
+    [
+     "literal",
+     [
+      "park",
+      "forest",
+      "wood",
+      "nature_reserve",
+      "national_park",
+      "garden",
+      "grass",
+      "grassland",
+      "meadow",
+      "cemetery",
+      "golf_course",
+      "allotments",
+      "village_green",
+      "playground",
+      "recreation_ground",
+      "scrub"
+     ]
+    ]
+   ],
+   "paint": {
+    "fill-color": "theme:basiskarte.gruen",
+    "fill-opacity": "theme:basiskarte.gruen_deckkraft"
+   }
+  },
+  {
+   "id": "wasser",
+   "type": "fill",
+   "source": "protomaps",
+   "source-layer": "water",
+   "filter": [
+    "==",
+    [
+     "geometry-type"
+    ],
+    "Polygon"
+   ],
+   "paint": {
+    "fill-color": "theme:basiskarte.wasser"
+   }
+  },
+  {
+   "id": "wasser-fluss",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "water",
+   "minzoom": 8,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "geometry-type"
+     ],
+     "LineString"
+    ],
+    [
+     "in",
+     [
+      "get",
+      "kind"
+     ],
+     [
+      "literal",
+      [
+       "river",
+       "canal"
+      ]
+     ]
+    ]
+   ],
+   "paint": {
+    "line-color": "theme:basiskarte.wasser",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     8,
+     1,
+     13,
+     4,
+     16,
+     10
+    ]
+   }
+  },
+  {
+   "id": "grenzen-kreise-gemeinden",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "boundaries",
+   "minzoom": 7,
+   "filter": [
+    ">=",
+    [
+     "get",
+     "kind_detail"
+    ],
+    5
+   ],
+   "paint": {
+    "line-color": "theme:basiskarte.grenze",
+    "line-width": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     7,
+     0.5,
+     13,
+     1.2
+    ],
+    "line-dasharray": [
+     4,
+     2
+    ]
+   }
+  },
+  {
+   "id": "grenzen-land",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "boundaries",
+   "filter": [
+    "<=",
+    [
+     "get",
+     "kind_detail"
+    ],
+    4
+   ],
+   "paint": {
+    "line-color": "theme:basiskarte.grenze",
+    "line-width": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     4,
+     0.8,
+     13,
+     1.6
+    ]
+   }
+  },
+  {
+   "id": "gebaeude",
+   "type": "fill",
+   "source": "protomaps",
+   "source-layer": "buildings",
+   "minzoom": 12,
+   "filter": [
+    "in",
+    [
+     "get",
+     "kind"
+    ],
+    [
+     "literal",
+     [
+      "building",
+      "building_part"
+     ]
+    ]
+   ],
+   "paint": {
+    "fill-color": "theme:basiskarte.gebaeude",
+    "fill-outline-color": "theme:basiskarte.gebaeude",
+    "fill-opacity": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     12,
+     0.5,
+     14,
+     1
+    ]
+   }
+  },
+  {
+   "id": "strasse-neben-kontur",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 11,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "kind"
+     ],
+     "minor_road"
+    ],
+    [
+     "!=",
+     [
+      "get",
+      "kind_detail"
+     ],
+     "service"
+    ]
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "theme:basiskarte.strasse_kontur",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     11,
+     1.2,
+     13,
+     4,
+     15,
+     11,
+     17,
+     30
+    ]
+   }
+  },
+  {
+   "id": "strasse-sammel-kontur",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 8,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "kind"
+     ],
+     "major_road"
+    ],
+    [
+     "in",
+     [
+      "get",
+      "kind_detail"
+     ],
+     [
+      "literal",
+      [
+       "secondary",
+       "secondary_link",
+       "tertiary",
+       "tertiary_link"
+      ]
+     ]
+    ]
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "theme:basiskarte.strasse_kontur",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     8,
+     1.2,
+     11,
+     3,
+     13,
+     6,
+     15,
+     14,
+     17,
+     36
+    ]
+   }
+  },
+  {
+   "id": "bahn",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 9,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "kind"
+     ],
+     "rail"
+    ],
+    [
+     "!",
+     [
+      "has",
+      "is_tunnel"
+     ]
+    ],
+    [
+     "!",
+     [
+      "in",
+      [
+       "get",
+       "kind_detail"
+      ],
+      [
+       "literal",
+       [
+        "subway",
+        "tram",
+        "funicular",
+        "monorail"
+       ]
+      ]
+     ]
+    ]
+   ],
+   "paint": {
+    "line-color": "theme:basiskarte.bahn",
+    "line-width": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     9,
+     1,
+     14,
+     2.2
+    ],
+    "line-dasharray": [
+     3,
+     2.5
+    ]
+   }
+  },
+  {
+   "id": "strasse-neben",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 11,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "kind"
+     ],
+     "minor_road"
+    ],
+    [
+     "!=",
+     [
+      "get",
+      "kind_detail"
+     ],
+     "service"
+    ]
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "theme:basiskarte.strasse_klein",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     11,
+     0.4,
+     13,
+     2.8,
+     15,
+     9.5,
+     17,
+     28
+    ]
+   }
+  },
+  {
+   "id": "strasse-sammel",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 8,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "kind"
+     ],
+     "major_road"
+    ],
+    [
+     "in",
+     [
+      "get",
+      "kind_detail"
+     ],
+     [
+      "literal",
+      [
+       "secondary",
+       "secondary_link",
+       "tertiary",
+       "tertiary_link"
+      ]
+     ]
+    ]
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "theme:basiskarte.strasse_klein",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     8,
+     0.5,
+     11,
+     2,
+     13,
+     4.6,
+     15,
+     12,
+     17,
+     34
+    ]
+   }
+  },
+  {
+   "id": "strasse-bundes",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 6,
+   "filter": [
+    "all",
+    [
+     "==",
+     [
+      "get",
+      "kind"
+     ],
+     "major_road"
+    ],
+    [
+     "in",
+     [
+      "get",
+      "kind_detail"
+     ],
+     [
+      "literal",
+      [
+       "trunk",
+       "trunk_link",
+       "primary",
+       "primary_link"
+      ]
+     ]
+    ]
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "theme:basiskarte.strasse_gross",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     6,
+     0.6,
+     9,
+     1.4,
+     12,
+     3.2,
+     14,
+     6,
+     17,
+     20
+    ]
+   }
+  },
+  {
+   "id": "strasse-autobahn",
+   "type": "line",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 4,
+   "filter": [
+    "==",
+    [
+     "get",
+     "kind"
+    ],
+    "highway"
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "theme:basiskarte.strasse_gross",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     4,
+     0.6,
+     8,
+     1.6,
+     11,
+     3,
+     14,
+     8,
+     17,
+     26
+    ]
+   }
+  },
+  {
+   "id": "label-gewaesser",
+   "type": "symbol",
+   "source": "protomaps",
+   "source-layer": "water",
+   "minzoom": 11,
+   "filter": [
+    "in",
+    [
+     "get",
+     "kind"
+    ],
+    [
+     "literal",
+     [
+      "river",
+      "canal"
+     ]
+    ]
+   ],
+   "metadata": {
+    "pr:label": true,
+    "pr:nachrang": true
+   },
+   "layout": {
+    "symbol-placement": "line",
+    "text-field": [
+     "coalesce",
+     [
+      "get",
+      "name:de"
+     ],
+     [
+      "get",
+      "name"
+     ]
+    ],
+    "text-font": [
+     "theme:schrift.karte_regular"
+    ],
+    "text-size": 13,
+    "text-letter-spacing": 0.1
+   },
+   "paint": {
+    "text-color": "theme:basiskarte.label",
+    "text-halo-color": "theme:basiskarte.label_halo",
+    "text-halo-width": 1.6,
+    "text-halo-blur": 0.3
+   }
+  },
+  {
+   "id": "haltestellen-punkt",
+   "type": "circle",
+   "source": "protomaps",
+   "source-layer": "pois",
+   "minzoom": 12,
+   "filter": [
+    "any",
+    [
+     "in",
+     [
+      "get",
+      "kind"
+     ],
+     [
+      "literal",
+      [
+       "station",
+       "halt"
+      ]
+     ]
+    ],
+    [
+     "all",
+     [
+      "in",
+      [
+       "get",
+       "kind"
+      ],
+      [
+       "literal",
+       [
+        "tram_stop",
+        "bus_stop"
+       ]
+      ]
+     ],
+     [
+      ">=",
+      [
+       "zoom"
+      ],
+      15
+     ]
+    ]
+   ],
+   "paint": {
+    "circle-radius": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     12,
+     2.5,
+     16,
+     5
+    ],
+    "circle-color": "theme:basiskarte.bahn",
+    "circle-stroke-color": "theme:basiskarte.label_halo",
+    "circle-stroke-width": 1.5
+   }
+  },
+  {
+   "id": "label-haltestellen",
+   "type": "symbol",
+   "source": "protomaps",
+   "source-layer": "pois",
+   "minzoom": 13,
+   "filter": [
+    "any",
+    [
+     "in",
+     [
+      "get",
+      "kind"
+     ],
+     [
+      "literal",
+      [
+       "station",
+       "halt"
+      ]
+     ]
+    ],
+    [
+     "all",
+     [
+      "in",
+      [
+       "get",
+       "kind"
+      ],
+      [
+       "literal",
+       [
+        "tram_stop",
+        "bus_stop"
+       ]
+      ]
+     ],
+     [
+      ">=",
+      [
+       "zoom"
+      ],
+      15
+     ]
+    ]
+   ],
+   "metadata": {
+    "pr:label": true,
+    "pr:nachrang": true
+   },
+   "layout": {
+    "text-field": [
+     "coalesce",
+     [
+      "get",
+      "name:de"
+     ],
+     [
+      "get",
+      "name"
+     ]
+    ],
+    "text-font": [
+     "theme:schrift.karte_regular"
+    ],
+    "text-size": 12,
+    "text-anchor": "top",
+    "text-offset": [
+     0,
+     0.6
+    ],
+    "text-max-width": 9
+   },
+   "paint": {
+    "text-color": "theme:basiskarte.label",
+    "text-halo-color": "theme:basiskarte.label_halo",
+    "text-halo-width": 1.6,
+    "text-halo-blur": 0.3
+   }
+  },
+  {
+   "id": "label-strasse-neben",
+   "type": "symbol",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 12,
+   "filter": [
+    "==",
+    [
+     "get",
+     "kind"
+    ],
+    "minor_road"
+   ],
+   "metadata": {
+    "pr:label": true,
+    "pr:nachrang": true
+   },
+   "layout": {
+    "symbol-placement": "line",
+    "text-field": [
+     "coalesce",
+     [
+      "get",
+      "name:de"
+     ],
+     [
+      "get",
+      "name"
+     ]
+    ],
+    "text-font": [
+     "theme:schrift.karte_regular"
+    ],
+    "text-max-angle": 30,
+    "symbol-spacing": 280,
+    "text-size": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     12,
+     12.5,
+     13,
+     13.5,
+     16,
+     16
+    ],
+    "text-padding": 2
+   },
+   "paint": {
+    "text-color": "theme:basiskarte.label",
+    "text-halo-color": "theme:basiskarte.label_halo",
+    "text-halo-width": 1.6,
+    "text-halo-blur": 0.3
+   }
+  },
+  {
+   "id": "label-strasse-haupt",
+   "type": "symbol",
+   "source": "protomaps",
+   "source-layer": "roads",
+   "minzoom": 11,
+   "filter": [
+    "in",
+    [
+     "get",
+     "kind"
+    ],
+    [
+     "literal",
+     [
+      "highway",
+      "major_road"
+     ]
+    ]
+   ],
+   "metadata": {
+    "pr:label": true
+   },
+   "layout": {
+    "symbol-placement": "line",
+    "text-field": [
+     "coalesce",
+     [
+      "get",
+      "name:de"
+     ],
+     [
+      "get",
+      "name"
+     ],
+     [
+      "get",
+      "ref"
+     ]
+    ],
+    "text-font": [
+     "theme:schrift.karte_regular"
+    ],
+    "text-max-angle": 30,
+    "symbol-spacing": 320,
+    "text-size": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     11,
+     12.5,
+     13,
+     14.5,
+     16,
+     17
+    ],
+    "text-padding": 2
+   },
+   "paint": {
+    "text-color": "theme:basiskarte.label",
+    "text-halo-color": "theme:basiskarte.label_halo",
+    "text-halo-width": 1.6,
+    "text-halo-blur": 0.3
+   }
+  },
+  {
+   "id": "label-stadtteile",
+   "type": "symbol",
+   "source": "protomaps",
+   "source-layer": "places",
+   "minzoom": 11,
+   "filter": [
+    "in",
+    [
+     "get",
+     "kind"
+    ],
+    [
+     "literal",
+     [
+      "neighbourhood",
+      "macrohood"
+     ]
+    ]
+   ],
+   "metadata": {
+    "pr:label": true,
+    "pr:nachrang": true
+   },
+   "layout": {
+    "text-field": [
+     "coalesce",
+     [
+      "get",
+      "name:de"
+     ],
+     [
+      "get",
+      "name"
+     ]
+    ],
+    "text-font": [
+     "theme:schrift.karte_regular"
+    ],
+    "text-transform": "uppercase",
+    "text-letter-spacing": "theme:basiskarte.ort_buchstabenabstand_em",
+    "text-size": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     11,
+     12,
+     15,
+     14
+    ],
+    "text-max-width": 8,
+    "text-padding": 6
+   },
+   "paint": {
+    "text-color": "theme:basiskarte.label",
+    "text-halo-color": "theme:basiskarte.label_halo",
+    "text-halo-width": 1.6,
+    "text-halo-blur": 0.3
+   }
+  },
+  {
+   "id": "label-orte",
+   "type": "symbol",
+   "source": "protomaps",
+   "source-layer": "places",
+   "minzoom": 6,
+   "filter": [
+    "==",
+    [
+     "get",
+     "kind"
+    ],
+    "locality"
+   ],
+   "metadata": {
+    "pr:label": true
+   },
+   "layout": {
+    "text-field": [
+     "coalesce",
+     [
+      "get",
+      "name:de"
+     ],
+     [
+      "get",
+      "name"
+     ]
+    ],
+    "text-font": [
+     "theme:schrift.karte_fett"
+    ],
+    "text-transform": "uppercase",
+    "text-letter-spacing": "theme:basiskarte.ort_buchstabenabstand_em",
+    "symbol-sort-key": [
+     "*",
+     -1,
+     [
+      "coalesce",
+      [
+       "get",
+       "population_rank"
+      ],
+      0
+     ]
+    ],
+    "text-size": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "coalesce",
+      [
+       "get",
+       "population_rank"
+      ],
+      5
+     ],
+     5,
+     11,
+     10,
+     14,
+     14,
+     17
+    ],
+    "text-max-width": 8,
+    "text-padding": 8
+   },
+   "paint": {
+    "text-color": "theme:basiskarte.label",
+    "text-halo-color": "theme:basiskarte.label_halo",
+    "text-halo-width": 1.6,
+    "text-halo-blur": 0.3
+   }
+  }
+ ]
+}

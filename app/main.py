@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from . import konfiguration as konf
 from .adapters.geodaten import GbfsStationsQuelle, GeoJsonQuelle, GtfsHaltestellenQuelle
-from . import api_erweiterung, theme
+from . import api_erweiterung, basiskarte, glyphen, theme
 from .adapters.zaehlreihen import ZaehlreihenSimulator, ZaehlstellenCsvQuelle
 from .domain.scoring import INDIKATOREN
 from .services.flaechenfinder import Flaechenfinder
@@ -122,6 +122,73 @@ def theme_css():
 @app.get("/favicon.svg", include_in_schema=False)
 def favicon():
     return Response(theme.favicon(), media_type="image/svg+xml")
+
+
+# ============================================================================ Basiskarte (selbst gehostet)
+
+def _testdaten_erlaubt(request: Request) -> bool:
+    return request.query_params.get("testdaten", "1") not in ("0", "false", "nein")
+
+
+@app.api_route("/karte/basemap.pmtiles", methods=["GET", "HEAD"], include_in_schema=False)
+def basemap_pmtiles(request: Request):
+    """PMTiles-Auszug mit HTTP-Range-Requests; MapLibre liest daraus nur die benötigten Kacheln."""
+    pfad, _ = basiskarte.aktive_datei(_testdaten_erlaubt(request))
+    if pfad is None:
+        raise HTTPException(404, "Kein Kartenauszug vorhanden (scripts/build_basemap.sh)")
+    st = pfad.stat()
+    groesse = st.st_size
+    kopf = {"Accept-Ranges": "bytes", "ETag": f'"{st.st_mtime_ns:x}-{groesse:x}"', "Cache-Control": "no-cache",
+            "Content-Type": "application/vnd.pmtiles"}
+    try:
+        bereich = basiskarte.bereich_aus_kopfzeile(request.headers.get("range"), groesse)
+    except ValueError:
+        return Response(status_code=416, headers={**kopf, "Content-Range": f"bytes */{groesse}"})
+    if bereich is None:
+        if request.method == "HEAD":
+            return Response(headers={**kopf, "Content-Length": str(groesse)})
+        return FileResponse(pfad, headers=kopf, media_type="application/vnd.pmtiles")
+    start, ende = bereich
+    kopf |= {"Content-Range": f"bytes {start}-{ende}/{groesse}", "Content-Length": str(ende - start + 1)}
+    inhalt = b"" if request.method == "HEAD" else basiskarte.lies(pfad, start, ende)
+    return Response(inhalt, status_code=206, headers=kopf, media_type="application/vnd.pmtiles")
+
+
+@app.get("/karte/stil/{name}.json", include_in_schema=False)
+def kartenstil(name: str, request: Request):
+    """MapLibre-Stil aus app/static/map/style-<name>.json mit den Farben aus traffiq_theme.yaml."""
+    return basiskarte.stil(name, str(request.base_url), _testdaten_erlaubt(request))
+
+
+@app.get("/karte/glyphen/{schrift}/{bereich}.pbf", include_in_schema=False)
+def kartenglyphen(schrift: str, bereich: str):
+    """Schrift-Glyphen für Kartenlabels; fehlen sie, werden sie aus der lokalen Schriftdatei erzeugt."""
+    name = schrift.split(",")[0].strip()
+    try:
+        start = int(bereich.split("-")[0])
+    except ValueError as exc:
+        raise HTTPException(404, "Unbekannter Glyphen-Bereich") from exc
+    if start % 256 or start > 65280:
+        raise HTTPException(404, "Unbekannter Glyphen-Bereich")
+    kandidaten = theme.laden()["schrift"].get("karte_dateien", {})
+    if name not in kandidaten:
+        raise HTTPException(404, f"Schrift '{name}' ist im Theme nicht hinterlegt")
+    datei = basiskarte.glyphen_verzeichnis() / name / f"{start}-{start + 255}.pbf"
+    if not datei.exists():
+        schrift_datei = glyphen.finde_schrift(kandidaten[name])
+        try:
+            inhalt = glyphen.bereich(schrift_datei, name, start) if schrift_datei else glyphen.leerer_bereich(name, start)
+        except ImportError:  # freetype-py fehlt: Bereich leer lassen, Karte funktioniert ohne diese Zeichen
+            return Response(glyphen.leerer_bereich(name, start), media_type="application/x-protobuf")
+        datei.parent.mkdir(parents=True, exist_ok=True)
+        datei.write_bytes(inhalt)
+    return Response(datei.read_bytes(), media_type="application/x-protobuf", headers={"Cache-Control": "max-age=86400"})
+
+
+@app.get("/api/basiskarte", tags=["Allgemein"])
+def basiskarte_status(request: Request):
+    """Vorhandener Kartenauszug mit Gebiet, Zoomstufen, Build-Datum und Quelle."""
+    return basiskarte.status(_testdaten_erlaubt(request))
 
 
 @app.get("/api/theme", tags=["Allgemein"])

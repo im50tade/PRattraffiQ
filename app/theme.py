@@ -59,6 +59,9 @@ def wert(theme: Mapping[str, Any], pfad: str) -> str:
     """Löst einen Pfad wie ``basis.text``, ``toenung:akzent.gruen`` oder ``sekundaertext`` zu einer Farbe auf."""
     if pfad == "sekundaertext":
         return mischen(wert(theme, "basis.text"), wert(theme, "basis.hintergrund"), theme["sekundaertext_anteil"])
+    if pfad == "basiskarte-gruen":  # Wald/Park, wie gezeichnet: Grün mit Deckkraft über der Landfläche
+        b = theme["basiskarte"]
+        return mischen(b["gruen"], b["land"], b["gruen_deckkraft"])
     if pfad.startswith("toenung:"):
         return mischen(wert(theme, pfad.split(":", 1)[1]), wert(theme, "basis.hintergrund"), theme["toenung_anteil"])
     knoten: Any = theme
@@ -78,7 +81,7 @@ def variablen(theme: Mapping[str, Any]) -> dict[str, str]:
         elif isinstance(knoten, str) and _HEX.match(knoten):
             v["--" + praefix.replace("_", "-")] = knoten
 
-    for schluessel in ("basis", "akzent", "map_layers", "status", "ampel"):
+    for schluessel in ("basis", "akzent", "map_layers", "status", "ampel", "basiskarte"):
         lauf(theme[schluessel], schluessel.replace("map_layers", "karte"))
     v["--focus-ring"] = theme["focus_ring"]
     v["--chart-alert"] = theme["chart_alert"]

@@ -3,7 +3,7 @@
  * kommen vollständig aus der API und werden hier nur dargestellt. */
 "use strict";
 
-// Demo-Ansicht (scripts/erzeuge_demo.py): vorberechnete Daten, ohne Hintergrundkarte und Dateiexport
+// Demo-Ansicht (scripts/erzeuge_demo.py): vorberechnete Daten, eingebetteter Test-Kartenauszug, ohne Dateiexport
 const DEMO = window.PR_DEMO === true;
 
 // ====================================================================== Theme
@@ -182,8 +182,8 @@ const LAYER_DEFINITION = [
   { name: "stadtgebiet", label: "Stadtgrenze und Zentrum", farbe: "akzent-grau", muster: "gestrichelt", an: true },
   { name: "gewaesser", label: "Main", farbe: "akzent-hellblau", an: true },
   { name: "referenzorte", label: "Referenzorte", farbe: "basis-text", an: true },
-  { name: "osm", label: "Hintergrundkarte OpenStreetMap (online)", farbe: "basis-hintergrund-sekundaer", an: false },
-].filter((d) => !(DEMO && d.name === "osm"));
+  { name: "basiskarte", label: "Stadtkarte (lokaler Kartenauszug)", farbe: "basiskarte-land", an: true },
+];
 
 // Scorefarbe: von einer hellen Tönung zur Textfarbe des Themes (dunkler = besser)
 function scoreFarbe(score) {
@@ -191,14 +191,71 @@ function scoreFarbe(score) {
   return toenung(T("basis-text"), 0.12 + 0.88 * t);
 }
 
+// ====================================================================== Basiskarte (Protomaps-Auszug, selbst gehostet)
+// Die Stadtkarte kommt als PMTiles-Datei vom eigenen Server (HTTP-Range) und wird mit MapLibre GL gezeichnet;
+// die eigenen Leaflet-Ebenen liegen darüber. Kein externer Kartendienst zur Laufzeit.
+const BASISKARTE = { status: null, protokoll: null, karten: [] };
+const KARTENSTILE = ["stadt", "schematisch"];
+const testdatenErlaubt = () => { try { return localStorage.getItem("pr-testdaten-anzeigen") !== "0"; } catch (_) { return true; } };
+
+async function basiskarteStatus(neu = false) {
+  if (!BASISKARTE.status || neu) {
+    try { BASISKARTE.status = await api(`/api/basiskarte${testdatenErlaubt() ? "" : "?testdaten=0"}`); }
+    catch (_) { BASISKARTE.status = { vorhanden: false, standardstil: "stadt", hinweis: "Status der Stadtkarte nicht abrufbar.", attribution: "" }; }
+  }
+  return BASISKARTE.status;
+}
+
+function kartenstil() {
+  let s = null;
+  try { s = localStorage.getItem("pr-kartenstil"); } catch (_) { /* Speicher gesperrt */ }
+  return KARTENSTILE.includes(s) ? s : (BASISKARTE.status?.standardstil || "stadt");
+}
+
+function stilAdresse(name) {
+  if (typeof window.PR_DEMO_STIL === "function") return window.PR_DEMO_STIL(name);
+  return `${location.origin}/karte/stil/${name}.json${testdatenErlaubt() ? "" : "?testdaten=0"}`;
+}
+
+/** Leaflet-Ebene mit der MapLibre-Basiskarte; null, wenn MapLibre nicht geladen werden konnte. */
+function basiskarteLayer(name = kartenstil()) {
+  if (typeof maplibregl === "undefined" || !L.maplibreGL) return null;
+  if (!BASISKARTE.protokoll && window.pmtiles) {
+    BASISKARTE.protokoll = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", BASISKARTE.protokoll.tile);
+    if (typeof window.PR_DEMO_PMTILES === "function") window.PR_DEMO_PMTILES(BASISKARTE.protokoll);
+  }
+  try {
+    const layer = L.maplibreGL({ style: stilAdresse(name), attributionControl: false, interactive: false, fadeDuration: bewegung.reduziert ? 0 : 300 });
+    BASISKARTE.karten.push(layer);
+    return layer;
+  } catch (e) {
+    console.warn("Stadtkarte nicht verfügbar:", e);  // ohne WebGL bleiben alle eigenen Ebenen nutzbar
+    return null;
+  }
+}
+
+/** Stil aller Basiskarten sofort wechseln (Auswahl bleibt gespeichert). */
+function setzeKartenstil(name) {
+  try { localStorage.setItem("pr-kartenstil", name); } catch (_) { /* Speicher gesperrt */ }
+  BASISKARTE.karten.forEach((l) => l.getMaplibreMap?.()?.setStyle(stilAdresse(name)));
+  document.dispatchEvent(new CustomEvent("kartenstil", { detail: name }));
+}
+
+/** Attribution fest im Kartenfuß – unabhängig von Stil und Ebenen, nicht abschaltbar. */
+async function festeAttribution(karte) {
+  const s = await basiskarteStatus();
+  const text = s.attribution || "© OpenStreetMap-Mitwirkende, Daten unter ODbL · Kartenkacheln: Protomaps";
+  karte.attributionControl.addAttribution(`<span class="attribution-fest">${esc(text)}${s.testdaten ? " · Test-Kartenauszug (synthetisch)" : ""}</span>`);
+}
+
 // ====================================================================== Karte
 function initKarte() {
   const k = zustand.konfig.region.karte;
-  const karte = L.map("karte", { zoomControl: true, keyboard: true }).setView(k.mitte, k.zoom);
+  const karte = L.map("karte", { zoomControl: true, keyboard: true, maxZoom: 19 }).setView(k.mitte, k.zoom);
   zustand.karte = karte;
-  zustand.layer.osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
-  });
+  zustand.layer.basiskarte = basiskarteLayer() || L.layerGroup();
+  festeAttribution(karte);
   L.control.scale({ imperial: false }).addTo(karte);
 }
 
@@ -287,7 +344,7 @@ async function ladeLayer() {
     cb.addEventListener("change", umschalten);
   });
   // Reihenfolge der Darstellung: Flächen zuletzt, damit sie anklickbar oben liegen
-  ["osm", "stadtgebiet", "gewaesser", "schutzgebiete_ug", "schutzgebiete_sg", "pendlerquellen", "radwege", "einfallachsen", "pr_bestand", "flaechenkandidaten", "sharing_stationen", "haltestellen", "referenzorte"]
+  ["basiskarte", "stadtgebiet", "gewaesser", "schutzgebiete_ug", "schutzgebiete_sg", "pendlerquellen", "radwege", "einfallachsen", "pr_bestand", "flaechenkandidaten", "sharing_stationen", "haltestellen", "referenzorte"]
     .forEach((n) => { if ($(`#layer-${n}`)?.checked) zustand.layer[n].addTo(zustand.karte); });
 }
 

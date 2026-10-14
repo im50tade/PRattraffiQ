@@ -332,6 +332,7 @@ window.PR_DEMO = true;
     const body = optionen.body ? JSON.parse(optionen.body) : {};
     let m;
     try {
+      if (pfad === "/api/basiskarte") return antwort(window.PR_DEMO_BASISKARTE_STATUS(q.get("testdaten") !== "0"));
       if (pfad === "/api/konfiguration") {
         const k = kopie(D.konfiguration);
         k.aktualisierung = { ...k.aktualisierung, intervall_s: zustand.intervall, zeitraffer: zustand.zeitraffer };
@@ -422,7 +423,65 @@ body:not(.startansicht) .demo-hinweis { margin-bottom: 1rem; border-radius: var(
 """
 
 DEMO_HINWEIS = """<p class="hinweis demo-hinweis" id="demo-hinweis"><strong>Demo-Ansicht</strong> mit am {erzeugt} vorberechneten Testdaten.
-Eingaben gelten nur für diese Sitzung; Hintergrundkarte, Dateiexport und Wettervorgabe gibt es nur in der vollständigen Version.</p>"""
+Eingaben gelten nur für diese Sitzung. Die Stadtkarte ist ein synthetischer Test-Auszug (Teststraßen); den echten Auszug
+erzeugt <code>scripts/build_basemap.sh</code>. Dateiexport und Wettervorgabe gibt es nur in der vollständigen Version.</p>"""
+
+# Basiskarte in der Demo: Test-Auszug und Glyphen eingebettet, MapLibre liest sie aus dem Speicher
+BASISKARTE_JS = r"""
+(() => {
+  const B = JSON.parse(document.getElementById("demo-basiskarte").textContent);
+  const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const erlaubt = () => { try { return localStorage.getItem("pr-testdaten-anzeigen") !== "0"; } catch (_) { return true; } };
+  window.PR_DEMO_BASISKARTE_STATUS = (mitTest) => (mitTest && B.pmtiles ? B.status : { ...B.status, vorhanden: false, testdaten: false,
+    hinweis: "Ohne Testdaten gibt es in der Demo keinen Kartenauszug." });
+  window.PR_DEMO_STIL = (name) => {
+    const s = JSON.parse(JSON.stringify(B.stile[name]));
+    if (name === "stadt" && (!erlaubt() || !B.pmtiles)) { s.sources = {}; s.layers = s.layers.filter((l) => !l.source); }
+    return s;
+  };
+  window.PR_DEMO_PMTILES = (protokoll) => {
+    if (B.pmtiles) protokoll.add(new pmtiles.PMTiles(new pmtiles.FileSource(new File([bytes(B.pmtiles)], "rhein-main-testdaten"))));
+    maplibregl.addProtocol("demoglyphen", async (anfrage) => {
+      const m = decodeURIComponent(anfrage.url).match(/^demoglyphen:\/\/([^/]+)\/(\d+-\d+)/);
+      const schluessel = m ? `${m[1].split(",")[0]}/${m[2]}` : "";
+      return { data: bytes(B.glyphen[schluessel] || B.leer).buffer };
+    });
+  };
+})();
+"""
+
+
+def basiskarte_erzeugen() -> dict:
+    """Stile (Theme eingesetzt), Test-Auszug und Glyphen für die Demo."""
+    import base64
+    from app import basiskarte, glyphen
+    pfad, ist_test = basiskarte.aktive_datei(True)
+    if pfad is not None and not ist_test:
+        pfad = WURZEL / basiskarte.einstellungen()["testdatei"]  # echte Auszüge sind zu groß für die Demo
+    stile = {}
+    for name in basiskarte.STILE:
+        st = basiskarte.vorlage(name)
+        st = basiskarte._aufloesen(st, theme.laden(), {"{attribution}": basiskarte.einstellungen()["attribution"]})
+        if "protomaps" in st.get("sources", {}):
+            st["sources"]["protomaps"]["url"] = "pmtiles://rhein-main-testdaten"
+        if "glyphs" in st:
+            st["glyphs"] = "demoglyphen://{fontstack}/{range}"
+        stile[name] = st
+    schriften = theme.laden()["schrift"]["karte_dateien"]
+    glyphen_b64 = {}
+    for name, kandidaten in schriften.items():
+        datei = glyphen.finde_schrift(kandidaten)
+        for start in glyphen.STANDARD_BEREICHE:
+            gespeichert = basiskarte.glyphen_verzeichnis() / name / f"{start}-{start + 255}.pbf"
+            inhalt = gespeichert.read_bytes() if gespeichert.exists() else (glyphen.bereich(datei, name, start) if datei else glyphen.leerer_bereich(name, start))
+            glyphen_b64[f"{name}/{start}-{start + 255}"] = base64.b64encode(inhalt).decode()
+    vorhanden = pfad is not None and pfad.exists()
+    status = basiskarte.status(True) if vorhanden else {"vorhanden": False}
+    status.update(testdaten=True, standardstil="stadt", attribution=basiskarte.einstellungen()["attribution"],
+                  mindestzoom=basiskarte.einstellungen()["mindestzoom"], bestand_symbolgroessen=basiskarte.einstellungen()["bestand_symbolgroessen"])
+    return {"status": status, "stile": stile, "glyphen": glyphen_b64,
+            "leer": base64.b64encode(glyphen.leerer_bereich("leer", 0)).decode(),
+            "pmtiles": base64.b64encode(pfad.read_bytes()).decode() if vorhanden else ""}
 
 
 def html_erzeugen(daten: dict) -> str:
@@ -438,12 +497,15 @@ def html_erzeugen(daten: dict) -> str:
     styles = (STATIC / "styles.css").read_text(encoding="utf-8")
     app_js = (STATIC / "app.js").read_text(encoding="utf-8")
     erweiterung_js = (STATIC / "erweiterung.js").read_text(encoding="utf-8")
+    maplibre_css = (STATIC / "vendor" / "maplibre" / "maplibre-gl.css").read_text(encoding="utf-8")
+    basis_json = json.dumps(basiskarte_erzeugen(), ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     cluster_css = "\n".join((STATIC / "vendor" / "markercluster" / n).read_text(encoding="utf-8") for n in ("MarkerCluster.css", "MarkerCluster.Default.css"))
     daten_json = json.dumps(daten, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     return f"""<title>P+R Flächenfinder Rhein-Main</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 {leaflet_css}
+{maplibre_css}
 {cluster_css}
 {theme.css()}
 {styles}
@@ -454,6 +516,11 @@ def html_erzeugen(daten: dict) -> str:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@4.5.0/dist/pmtiles.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
+<script id="demo-basiskarte" type="application/json">{basis_json}</script>
+<script>{BASISKARTE_JS}</script>
 <script>{ZWISCHENSCHICHT}</script>
 <script>
 {app_js}

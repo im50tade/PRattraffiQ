@@ -7,6 +7,9 @@
   <meta name="description" content="Prototyp zur Suche, Bewertung und zum Monitoring von Park-and-Ride-Flächen im Raum Frankfurt am Main">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
         onerror="this.onerror=null;this.href='/static/vendor/leaflet/leaflet.css'">
+  <!-- MapLibre GL JS für die selbst gehostete Stadtkarte; versionsfest per CDN, lokal als Rückfall (offline) -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous"
+        onerror="this.onerror=null;this.removeAttribute('integrity');this.href='/static/vendor/maplibre/maplibre-gl.css'">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.css">
   <link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.Default.css">
@@ -84,6 +87,13 @@
             <option value="20000">ab 20.000 m²</option>
           </select>
         </div>
+        <fieldset class="filter kartenstil" id="kartenstil">
+          <legend>Kartenstil</legend>
+          <div class="segment">
+            <label><input type="radio" name="kartenstil" value="stadt" checked><span>Stadtkarte</span></label>
+            <label><input type="radio" name="kartenstil" value="schematisch"><span>Schematisch</span></label>
+          </div>
+        </fieldset>
         <div class="filter filter-ebenen">
           <button type="button" class="knopf knopf-zweit" id="ebenen-knopf" aria-expanded="false" aria-controls="ebenen-panel">
             Kartenebenen <span class="zaehler" id="ebenen-zaehler">3 von 7</span>
@@ -145,6 +155,8 @@
         <div class="start-karte">
           <div id="netz-karte" role="region" aria-label="Karte mit Bestands-P+R, ÖPNV, Straßen und Flächen"></div>
           <p class="karte-status" id="netz-status" aria-live="polite"></p>
+          <p class="karte-status karte-hinweis" id="karten-hinweis" hidden></p>
+          <p class="karte-status karte-hinweis" id="zoom-hinweis" role="status" hidden></p>
           <section id="netz-detail" class="steckbrief-panel" aria-labelledby="netz-detail-titel" hidden>
             <div class="steckbrief-kopf">
               <h2 id="netz-detail-titel" tabindex="-1">Steckbrief</h2>
@@ -185,7 +197,7 @@
         <div class="karte-haupt">
           <div id="karte" role="region" aria-label="Karte Frankfurt am Main mit Testflächen und Bezugsdaten"></div>
           <p class="klein karte-hinweis">Lage der Referenzpunkte genähert. Testflächen, Verkehrsmengen, Takte, Schutz- und Überschwemmungsgebiete sind synthetische Testdaten.
-            Die Hintergrundkarte benötigt eine Internetverbindung; alle Fachebenen funktionieren offline.</p>
+            Die Stadtkarte kommt aus dem lokalen Kartenauszug und funktioniert wie alle Fachebenen ohne Internetverbindung.</p>
         </div>
       </div>
 
@@ -421,6 +433,12 @@
   <script>window.Chart || document.write('<script src="/static/vendor/chartjs/chart.umd.js"><\/script>')</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script>(window.L && L.markerClusterGroup) || document.write('<script src="/static/vendor/markercluster/leaflet.markercluster.js"><\/script>')</script>
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
+  <script>window.maplibregl || document.write('<script src="/static/vendor/maplibre/maplibre-gl.js"><\/script>')</script>
+  <script src="https://unpkg.com/pmtiles@4.5.0/dist/pmtiles.js" integrity="sha384-pbKNZbDshUsLnZMIVsn/t+j3xEY9PGfuX5Z22l5rcy/obXz3EwaMx1F5d9sRsJMn" crossorigin="anonymous"></script>
+  <script>window.pmtiles || document.write('<script src="/static/vendor/pmtiles/pmtiles.js"><\/script>')</script>
+  <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js" integrity="sha384-tXYNKOHx4T02jMP7YYCtBxPIv1B5gaA5mcVPBzqMp6d7VzWzxJgI2aWF/nJLrQdS" crossorigin="anonymous"></script>
+  <script>(window.L && L.maplibreGL) || document.write('<script src="/static/vendor/maplibre-leaflet/leaflet-maplibre-gl.js"><\/script>')</script>
   <script src="/static/app.js"></script>
   <script src="/static/erweiterung.js"></script>
 </body>
