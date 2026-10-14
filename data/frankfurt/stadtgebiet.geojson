@@ -1,0 +1,117 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "stadtgrenze",
+    "name": "Stadtgrenze Frankfurt am Main (vereinfachte Näherung)",
+    "typ": "stadtgebiet",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.63,
+       50.227
+      ],
+      [
+       8.71,
+       50.218
+      ],
+      [
+       8.765,
+       50.2
+      ],
+      [
+       8.8,
+       50.175
+      ],
+      [
+       8.802,
+       50.135
+      ],
+      [
+       8.76,
+       50.118
+      ],
+      [
+       8.735,
+       50.1
+      ],
+      [
+       8.735,
+       50.055
+      ],
+      [
+       8.69,
+       50.02
+      ],
+      [
+       8.6,
+       50.016
+      ],
+      [
+       8.54,
+       50.03
+      ],
+      [
+       8.52,
+       50.06
+      ],
+      [
+       8.475,
+       50.075
+      ],
+      [
+       8.475,
+       50.105
+      ],
+      [
+       8.52,
+       50.12
+      ],
+      [
+       8.56,
+       50.14
+      ],
+      [
+       8.59,
+       50.16
+      ],
+      [
+       8.6,
+       50.19
+      ],
+      [
+       8.62,
+       50.21
+      ],
+      [
+       8.63,
+       50.227
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "zentrum",
+    "name": "Zentrum (Römer/Hauptwache)",
+    "typ": "zentrum",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.6821,
+     50.1106
+    ]
+   }
+  }
+ ]
+}

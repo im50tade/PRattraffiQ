@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P+R Flächenfinder Rhein-Main</title>
+  <meta name="description" content="Prototyp zur Suche, Bewertung und zum Monitoring von Park-and-Ride-Flächen im Raum Frankfurt am Main">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+        onerror="this.onerror=null;this.href='/static/vendor/leaflet/leaflet.css'">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b5cad'/%3E%3Ctext x='16' y='22' font-size='15' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP+R%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <a class="sprunglink" href="#inhalt">Zum Inhalt springen</a>
+
+  <header class="kopf">
+    <div class="kopf-titel">
+      <h1>P+R Flächenfinder Rhein-Main</h1>
+      <p class="kopf-region"><span id="region-label">Pilotraum Frankfurt am Main</span>
+        <span id="testdaten-hinweis" class="badge badge-test" title="Alle Sachdaten sind synthetisch">Testdaten</span></p>
+    </div>
+    <label class="schalter">
+      <input type="checkbox" id="bewegung-reduzieren">
+      <span>Animationen reduzieren</span>
+    </label>
+  </header>
+
+  <nav class="reiter" role="tablist" aria-label="Module">
+    <button role="tab" id="tab-finder" aria-controls="panel-finder" aria-selected="true">Flächenfinder</button>
+    <button role="tab" id="tab-monitoring" aria-controls="panel-monitoring" aria-selected="false" tabindex="-1">Live-Monitoring</button>
+    <button role="tab" id="tab-wirkung" aria-controls="panel-wirkung" aria-selected="false" tabindex="-1">Wirkungsanalyse</button>
+    <button role="tab" id="tab-methodik" aria-controls="panel-methodik" aria-selected="false" tabindex="-1">Daten und Methodik</button>
+  </nav>
+
+  <main id="inhalt">
+    <p id="lade-fehler" class="hinweis hinweis-fehler" hidden></p>
+
+    <!-- ===================================================== Flächenfinder -->
+    <section id="panel-finder" role="tabpanel" aria-labelledby="tab-finder" tabindex="0">
+      <div class="finder-raster">
+        <aside class="karte-seite" aria-labelledby="gewichtung-titel">
+          <h2 id="gewichtung-titel">Gewichtung</h2>
+          <label for="profil" class="feld-label">Gewichtungsprofil</label>
+          <select id="profil"></select>
+          <p id="profil-beschreibung" class="klein"></p>
+          <div id="regler" class="regler-liste"></div>
+          <p class="klein" id="gewichte-summe" aria-live="polite"></p>
+          <button type="button" id="profil-zuruecksetzen" class="knopf knopf-zweit">Profilwerte wiederherstellen</button>
+
+          <fieldset class="layer-auswahl">
+            <legend>Kartenebenen</legend>
+            <div id="layer-schalter"></div>
+          </fieldset>
+          <div class="legende" aria-label="Legende Gesamtscore">
+            <span class="klein">Gesamtscore der Testflächen</span>
+            <div class="legende-skala"><span>0</span><span class="skala-balken" aria-hidden="true"></span><span>100</span></div>
+            <span class="klein"><span class="legende-ausschluss" aria-hidden="true"></span> ausgeschlossen (K.-o.)</span>
+          </div>
+        </aside>
+
+        <div class="karte-haupt">
+          <div id="karte" role="region" aria-label="Karte Frankfurt am Main mit Testflächen und Bezugsdaten"></div>
+          <p class="klein karte-hinweis">Lage der Referenzpunkte genähert. Testflächen, Verkehrsmengen, Takte, Schutz- und Überschwemmungsgebiete sind synthetische Testdaten.
+            Die Hintergrundkarte benötigt eine Internetverbindung; alle Fachebenen funktionieren offline.</p>
+        </div>
+      </div>
+
+      <section class="karte-block" aria-labelledby="ranking-titel">
+        <div class="block-kopf">
+          <h2 id="ranking-titel">Ranking</h2>
+          <div class="knopf-reihe">
+            <button type="button" id="vergleich-starten" class="knopf" disabled>Auswahl vergleichen</button>
+            <a id="export-csv" class="knopf knopf-zweit" href="/api/export/ranking.csv" download>CSV exportieren</a>
+            <a id="export-geojson" class="knopf knopf-zweit" href="/api/export/ranking.geojson" download>GeoJSON exportieren</a>
+          </div>
+        </div>
+        <p class="klein">Spaltenköpfe sortieren die Tabelle. Zeile mit Klick oder Eingabetaste öffnen: Die Karte zoomt auf die Fläche und der Steckbrief erscheint. Für den Vergleich zwei bis drei Flächen ankreuzen.</p>
+        <div class="tabelle-rahmen">
+          <table id="ranking-tabelle" class="tabelle">
+            <caption class="sr-only">Ranking der bewertbaren Testflächen</caption>
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>Ausgeschlossene Flächen (K.-o.-Kriterium)</h3>
+        <ul id="ausgeschlossen-liste" class="ausschluss-liste"></ul>
+      </section>
+
+      <section id="steckbrief" class="karte-block" aria-labelledby="steckbrief-titel" hidden>
+        <div class="block-kopf">
+          <h2 id="steckbrief-titel" tabindex="-1">Steckbrief</h2>
+          <button type="button" class="knopf knopf-zweit" id="steckbrief-schliessen">Steckbrief schließen</button>
+        </div>
+        <div id="steckbrief-inhalt"></div>
+      </section>
+
+      <section id="vergleich" class="karte-block" aria-labelledby="vergleich-titel" hidden>
+        <div class="block-kopf">
+          <h2 id="vergleich-titel" tabindex="-1">Flächenvergleich</h2>
+          <button type="button" class="knopf knopf-zweit" id="vergleich-schliessen">Vergleich schließen</button>
+        </div>
+        <div class="vergleich-raster">
+          <div class="diagramm-rahmen diagramm-hoch"><canvas id="vergleich-radar" role="img" aria-label="Netzdiagramm der Teilscores der ausgewählten Flächen"></canvas></div>
+          <div class="tabelle-rahmen"><table id="vergleich-tabelle" class="tabelle"></table></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ===================================================== Live-Monitoring -->
+    <section id="panel-monitoring" role="tabpanel" aria-labelledby="tab-monitoring" tabindex="0" hidden>
+      <section class="karte-block steuerung" aria-labelledby="steuerung-titel">
+        <h2 id="steuerung-titel">Datenquelle und Simulation</h2>
+        <div class="steuerung-raster">
+          <div><span class="feld-label">Simulationszeit</span><strong id="sim-zeit" aria-live="off">–</strong></div>
+          <div><span class="feld-label">Wetter</span><strong id="sim-wetter">–</strong></div>
+          <div><span class="feld-label">Datenquelle</span><strong id="sim-quelle">–</strong></div>
+          <div>
+            <label for="intervall" class="feld-label">Aktualisierung</label>
+            <select id="intervall">
+              <option value="2">alle 2 Sekunden</option>
+              <option value="5">alle 5 Sekunden</option>
+              <option value="10">alle 10 Sekunden</option>
+              <option value="30">alle 30 Sekunden</option>
+            </select>
+          </div>
+          <div>
+            <label for="zeitraffer" class="feld-label">Zeitraffer</label>
+            <select id="zeitraffer"></select>
+          </div>
+          <div>
+            <label for="wetter" class="feld-label">Wettervorgabe</label>
+            <select id="wetter"></select>
+          </div>
+          <div class="knopf-reihe">
+            <button type="button" id="pause" class="knopf" aria-pressed="false">Simulation anhalten</button>
+            <a class="knopf knopf-zweit" href="/api/monitoring/export.csv" download>Messwerte als CSV</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="dashboard-titel">
+        <h2 id="dashboard-titel">Auslastung jetzt</h2>
+        <p class="klein">Ampel: grün unter 70 %, gelb 70–90 %, rot über 90 %. Operative Werte beziehen sich auf die letzten 24 Stunden, Wirtschaftlichkeit und Wirkung auf den Durchschnittstag der letzten 7 Tage.</p>
+        <div id="kacheln" class="kacheln"></div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="kennzahlen-titel">
+        <h2 id="kennzahlen-titel">Kennzahlen je Standort</h2>
+        <div class="tabelle-rahmen"><table id="kennzahlen-tabelle" class="tabelle tabelle-kennzahlen"></table></div>
+        <h3>Sharing an den Mobilstationen</h3>
+        <div class="tabelle-rahmen"><table id="sharing-tabelle" class="tabelle"></table></div>
+        <h3><label for="herleitung-standort">Herleitung der Kennzahlen für</label></h3>
+        <select id="herleitung-standort"></select>
+        <div id="herleitung" class="herleitung-liste"></div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="zeitreihen-titel">
+        <h2 id="zeitreihen-titel">Zeitreihen</h2>
+        <div class="knopf-reihe">
+          <label for="zr-standort" class="feld-label">Standort</label>
+          <select id="zr-standort"></select>
+          <fieldset class="segment">
+            <legend class="sr-only">Zeitfenster</legend>
+            <label><input type="radio" name="zr-fenster" value="tag" checked> Tag (24 h)</label>
+            <label><input type="radio" name="zr-fenster" value="woche"> Woche (7 Tage)</label>
+          </fieldset>
+        </div>
+        <div class="diagramm-raster">
+          <figure><figcaption>Auslastung</figcaption><div class="diagramm-rahmen"><canvas id="zr-auslastung" role="img" aria-label="Zeitreihe der Auslastung"></canvas></div></figure>
+          <figure><figcaption id="zr-erloes-titel">Erlös</figcaption><div class="diagramm-rahmen"><canvas id="zr-erloes" role="img" aria-label="Zeitreihe der Erlöse"></canvas></div></figure>
+          <figure><figcaption id="zr-dg-titel">Deckungsgrad</figcaption><div class="diagramm-rahmen"><canvas id="zr-deckungsgrad" role="img" aria-label="Zeitreihe des Deckungsgrads"></canvas></div></figure>
+        </div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="standortvergleich-titel">
+        <h2 id="standortvergleich-titel">Standortvergleich</h2>
+        <div class="diagramm-raster">
+          <figure><figcaption>Auslastung aktuell</figcaption><div class="diagramm-rahmen"><canvas id="sv-auslastung" role="img" aria-label="Vergleich der Auslastung"></canvas></div></figure>
+          <figure><figcaption>Deckungsgrad</figcaption><div class="diagramm-rahmen"><canvas id="sv-deckungsgrad" role="img" aria-label="Vergleich des Deckungsgrads"></canvas></div></figure>
+          <figure><figcaption>Kosten je verlagerter Fahrt</figcaption><div class="diagramm-rahmen"><canvas id="sv-kosten" role="img" aria-label="Vergleich der Kosten je verlagerter Fahrt"></canvas></div></figure>
+        </div>
+      </section>
+
+      <section class="karte-block" aria-labelledby="adapter-titel">
+        <h2 id="adapter-titel">Adapter der Datenquellen</h2>
+        <div id="adapter-liste" class="adapter-liste"></div>
+      </section>
+    </section>
+
+    <!-- ===================================================== Wirkungsanalyse -->
+    <section id="panel-wirkung" role="tabpanel" aria-labelledby="tab-wirkung" tabindex="0" hidden>
+      <section class="karte-block" aria-labelledby="wirkung-titel">
+        <h2 id="wirkung-titel">Vorher-Nachher-Vergleich</h2>
+        <div class="knopf-reihe">
+          <label for="wk-standort" class="feld-label">Standort</label>
+          <select id="wk-standort"></select>
+        </div>
+        <p id="wk-zeitraum" class="klein"></p>
+        <div class="tabelle-rahmen"><table id="wk-tabelle" class="tabelle"></table></div>
+        <div class="knopf-reihe">
+          <label for="wk-indikator" class="feld-label">Verlauf anzeigen für</label>
+          <select id="wk-indikator"></select>
+        </div>
+        <div class="diagramm-rahmen diagramm-breit"><canvas id="wk-diagramm" role="img" aria-label="Werktägliche Zählreihe vor und nach der Eröffnung"></canvas></div>
+      </section>
+
+      <div class="zwei-spalten">
+        <section class="karte-block" aria-labelledby="befragung-titel">
+          <h2 id="befragung-titel">Befragungsergebnis</h2>
+          <p class="klein">Der Verlagerungsanteil gibt an, welcher Anteil der P+R-Nutzer ohne den Standort mit dem Pkw ins Zentrum gefahren wäre. Der Wert speist sofort die Kennzahlen im Live-Monitoring.</p>
+          <form id="befragung-form" class="formular">
+            <label for="bf-anteil">Verlagerungsanteil in Prozent</label>
+            <input id="bf-anteil" type="number" min="0" max="100" step="1" required inputmode="decimal">
+            <label for="bf-n">Stichprobengröße (Anzahl Befragte)</label>
+            <input id="bf-n" type="number" min="1" step="1" inputmode="numeric">
+            <label for="bf-zeitraum">Erhebungszeitraum</label>
+            <input id="bf-zeitraum" type="text" maxlength="80" autocomplete="off">
+            <button type="submit" class="knopf">Befragungsergebnis übernehmen</button>
+            <p id="bf-status" class="klein" role="status"></p>
+          </form>
+        </section>
+        <section class="karte-block" aria-labelledby="abgleich-titel">
+          <h2 id="abgleich-titel">Abgleich Befragung und Zählung</h2>
+          <div id="abgleich"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================================================== Methodik -->
+    <section id="panel-methodik" role="tabpanel" aria-labelledby="tab-methodik" tabindex="0" hidden>
+      <div id="methodik"></div>
+    </section>
+  </main>
+
+  <footer class="fuss">
+    <p>Prototyp mit synthetischen Testdaten. Es werden ausschließlich anonyme Zählwerte verarbeitet; Kennzeichen oder personenbezogene Daten werden weder erfasst noch gespeichert.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script>window.L || document.write('<script src="/static/vendor/leaflet/leaflet.js"><\/script>')</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>window.Chart || document.write('<script src="/static/vendor/chartjs/chart.umd.js"><\/script>')</script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

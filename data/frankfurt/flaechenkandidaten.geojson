@@ -1,0 +1,805 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T01",
+    "name": "Testfläche 01",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 70,
+    "naturnaehe_prozent": 10,
+    "investition_je_stellplatz_eur": 4500,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.599342,
+       50.178058
+      ],
+      [
+       8.600858,
+       50.178235
+      ],
+      [
+       8.600658,
+       50.178942
+      ],
+      [
+       8.599142,
+       50.178765
+      ],
+      [
+       8.599342,
+       50.178058
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T02",
+    "name": "Testfläche 02",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 20,
+    "naturnaehe_prozent": 50,
+    "investition_je_stellplatz_eur": 7000,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.609163,
+       50.169592
+      ],
+      [
+       8.610843,
+       50.169598
+      ],
+      [
+       8.610837,
+       50.170408
+      ],
+      [
+       8.609157,
+       50.170402
+      ],
+      [
+       8.609163,
+       50.169592
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T03",
+    "name": "Testfläche 03",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 10,
+    "naturnaehe_prozent": 60,
+    "investition_je_stellplatz_eur": 8000,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.627506,
+       50.195294
+      ],
+      [
+       8.6292,
+       50.195929
+      ],
+      [
+       8.628494,
+       50.196706
+      ],
+      [
+       8.6268,
+       50.196071
+      ],
+      [
+       8.627506,
+       50.195294
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T04",
+    "name": "Testfläche 04",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 85,
+    "naturnaehe_prozent": 5,
+    "investition_je_stellplatz_eur": 4200,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.589303,
+       50.159638
+      ],
+      [
+       8.590703,
+       50.159643
+      ],
+      [
+       8.590697,
+       50.160362
+      ],
+      [
+       8.589297,
+       50.160357
+      ],
+      [
+       8.589303,
+       50.159638
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T05",
+    "name": "Testfläche 05",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 90,
+    "naturnaehe_prozent": 5,
+    "investition_je_stellplatz_eur": 3800,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.631165,
+       50.067093
+      ],
+      [
+       8.632841,
+       50.067098
+      ],
+      [
+       8.632835,
+       50.067907
+      ],
+      [
+       8.631159,
+       50.067902
+      ],
+      [
+       8.631165,
+       50.067093
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T06",
+    "name": "Testfläche 06",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 40,
+    "naturnaehe_prozent": 70,
+    "investition_je_stellplatz_eur": 5000,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.614304,
+       50.075683
+      ],
+      [
+       8.615701,
+       50.075688
+      ],
+      [
+       8.615696,
+       50.076317
+      ],
+      [
+       8.614299,
+       50.076312
+      ],
+      [
+       8.614304,
+       50.075683
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T07",
+    "name": "Testfläche 07",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 60,
+    "naturnaehe_prozent": 20,
+    "investition_je_stellplatz_eur": 5200,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.559154,
+       50.058543
+      ],
+      [
+       8.560963,
+       50.058651
+      ],
+      [
+       8.560846,
+       50.059457
+      ],
+      [
+       8.559037,
+       50.059349
+      ],
+      [
+       8.559154,
+       50.058543
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T08",
+    "name": "Testfläche 08",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 30,
+    "naturnaehe_prozent": 40,
+    "investition_je_stellplatz_eur": 6000,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.584235,
+       50.062138
+      ],
+      [
+       8.585772,
+       50.062143
+      ],
+      [
+       8.585765,
+       50.062862
+      ],
+      [
+       8.584228,
+       50.062857
+      ],
+      [
+       8.584235,
+       50.062138
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T09",
+    "name": "Testfläche 09",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 100,
+    "naturnaehe_prozent": 0,
+    "investition_je_stellplatz_eur": 21000,
+    "geschosse": 3,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.649843,
+       50.079598
+      ],
+      [
+       8.650641,
+       50.079961
+      ],
+      [
+       8.650157,
+       50.080402
+      ],
+      [
+       8.649359,
+       50.080039
+      ],
+      [
+       8.649843,
+       50.079598
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T10",
+    "name": "Testfläche 10",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 75,
+    "naturnaehe_prozent": 10,
+    "investition_je_stellplatz_eur": 4800,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.877231,
+       50.140139
+      ],
+      [
+       8.878771,
+       50.140141
+      ],
+      [
+       8.878769,
+       50.140861
+      ],
+      [
+       8.877229,
+       50.140859
+      ],
+      [
+       8.877231,
+       50.140139
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T11",
+    "name": "Testfläche 11",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 50,
+    "naturnaehe_prozent": 30,
+    "investition_je_stellplatz_eur": 6200,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.839161,
+       50.148639
+      ],
+      [
+       8.840841,
+       50.148641
+      ],
+      [
+       8.840839,
+       50.149361
+      ],
+      [
+       8.839159,
+       50.149359
+      ],
+      [
+       8.839161,
+       50.148639
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T12",
+    "name": "Testfläche 12",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 80,
+    "naturnaehe_prozent": 5,
+    "investition_je_stellplatz_eur": 5000,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.799302,
+       50.154094
+      ],
+      [
+       8.800702,
+       50.154096
+      ],
+      [
+       8.800698,
+       50.154906
+      ],
+      [
+       8.799298,
+       50.154904
+      ],
+      [
+       8.799302,
+       50.154094
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T13",
+    "name": "Testfläche 13",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 0,
+    "naturnaehe_prozent": 85,
+    "investition_je_stellplatz_eur": 6500,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.859162,
+       50.128139
+      ],
+      [
+       8.86084,
+       50.128141
+      ],
+      [
+       8.860838,
+       50.128861
+      ],
+      [
+       8.85916,
+       50.128859
+      ],
+      [
+       8.859162,
+       50.128139
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T14",
+    "name": "Testfläche 14",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 90,
+    "naturnaehe_prozent": 5,
+    "investition_je_stellplatz_eur": 4300,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.78441,
+       50.115567
+      ],
+      [
+       8.785787,
+       50.115725
+      ],
+      [
+       8.78559,
+       50.116433
+      ],
+      [
+       8.784213,
+       50.116275
+      ],
+      [
+       8.78441,
+       50.115567
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T15",
+    "name": "Testfläche 15",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 10,
+    "naturnaehe_prozent": 80,
+    "investition_je_stellplatz_eur": 6800,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.574235,
+       50.096092
+      ],
+      [
+       8.575773,
+       50.096098
+      ],
+      [
+       8.575765,
+       50.096908
+      ],
+      [
+       8.574227,
+       50.096902
+      ],
+      [
+       8.574235,
+       50.096092
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T16",
+    "name": "Testfläche 16",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 70,
+    "naturnaehe_prozent": 10,
+    "investition_je_stellplatz_eur": 5500,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.544304,
+       50.111638
+      ],
+      [
+       8.545703,
+       50.111643
+      ],
+      [
+       8.545696,
+       50.112362
+      ],
+      [
+       8.544297,
+       50.112357
+      ],
+      [
+       8.544304,
+       50.111638
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T17",
+    "name": "Testfläche 17",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 20,
+    "naturnaehe_prozent": 60,
+    "investition_je_stellplatz_eur": 6500,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.699162,
+       50.169593
+      ],
+      [
+       8.700843,
+       50.169597
+      ],
+      [
+       8.700838,
+       50.170407
+      ],
+      [
+       8.699157,
+       50.170403
+      ],
+      [
+       8.699162,
+       50.169593
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T18",
+    "name": "Testfläche 18",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 95,
+    "naturnaehe_prozent": 5,
+    "investition_je_stellplatz_eur": 3500,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.638954,
+       50.129547
+      ],
+      [
+       8.641053,
+       50.129554
+      ],
+      [
+       8.641046,
+       50.130453
+      ],
+      [
+       8.638947,
+       50.130446
+      ],
+      [
+       8.638954,
+       50.129547
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T19",
+    "name": "Testfläche 19",
+    "eigentum": "privat",
+    "versiegelungsgrad_prozent": 60,
+    "naturnaehe_prozent": 20,
+    "investition_je_stellplatz_eur": 5000,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.699234,
+       50.059638
+      ],
+      [
+       8.700771,
+       50.059642
+      ],
+      [
+       8.700766,
+       50.060362
+      ],
+      [
+       8.699229,
+       50.060358
+      ],
+      [
+       8.699234,
+       50.059638
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "T20",
+    "name": "Testfläche 20",
+    "eigentum": "öffentlich",
+    "versiegelungsgrad_prozent": 30,
+    "naturnaehe_prozent": 70,
+    "investition_je_stellplatz_eur": 5800,
+    "geschosse": 1,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.669371,
+       50.214683
+      ],
+      [
+       8.670633,
+       50.214687
+      ],
+      [
+       8.670629,
+       50.215317
+      ],
+      [
+       8.669367,
+       50.215313
+      ],
+      [
+       8.669371,
+       50.214683
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,125 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SH1",
+    "name": "Test-Mobilstation Hauptbahnhof",
+    "bike": 25,
+    "escooter": 40,
+    "carsharing": 8,
+    "lastenrad": 3,
+    "pr_standort": null,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.663,
+     50.1075
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SH2",
+    "name": "Test-Mobilstation Konstablerwache",
+    "bike": 20,
+    "escooter": 30,
+    "carsharing": 4,
+    "lastenrad": 2,
+    "pr_standort": null,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.687,
+     50.1145
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SH3",
+    "name": "Test-Mobilstation Weißkirchen/Steinbach",
+    "bike": 10,
+    "escooter": 12,
+    "carsharing": 2,
+    "lastenrad": 0,
+    "pr_standort": "P1",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.597,
+     50.1752
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SH4",
+    "name": "Test-Mobilstation Stadion",
+    "bike": 12,
+    "escooter": 20,
+    "carsharing": 4,
+    "lastenrad": 2,
+    "pr_standort": "P2",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.635,
+     50.0712
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SH5",
+    "name": "Test-Bike-Station Wilhelmsbad",
+    "bike": 10,
+    "escooter": 0,
+    "carsharing": 0,
+    "lastenrad": 2,
+    "pr_standort": "P3",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.881,
+     50.1378
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "SH6",
+    "name": "Test-Mobilstation Offenbach Marktplatz",
+    "bike": 15,
+    "escooter": 20,
+    "carsharing": 3,
+    "lastenrad": 2,
+    "pr_standort": null,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.7665,
+     50.101
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,129 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "A3",
+    "name": "A 3 / B 43 aus Richtung Westen",
+    "dtv_kfz": 85000,
+    "einpendler": 35000,
+    "zaehlstelle": "Testzählstelle W1",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.4,
+      50.035
+     ],
+     [
+      8.47,
+      50.04
+     ],
+     [
+      8.53,
+      50.055
+     ],
+     [
+      8.596,
+      50.056
+     ],
+     [
+      8.635,
+      50.085
+     ],
+     [
+      8.662,
+      50.105
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "A5",
+    "name": "A 5 aus Richtung Norden",
+    "dtv_kfz": 95000,
+    "einpendler": 45000,
+    "zaehlstelle": "Testzählstelle N1",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.72,
+      50.3
+     ],
+     [
+      8.66,
+      50.23
+     ],
+     [
+      8.64,
+      50.205
+     ],
+     [
+      8.594,
+      50.152
+     ],
+     [
+      8.6,
+      50.12
+     ],
+     [
+      8.645,
+      50.112
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "A66",
+    "name": "A 66 aus Richtung Osten",
+    "dtv_kfz": 70000,
+    "einpendler": 30000,
+    "zaehlstelle": "Testzählstelle O1",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.93,
+      50.135
+     ],
+     [
+      8.88,
+      50.143
+     ],
+     [
+      8.84,
+      50.147
+     ],
+     [
+      8.8,
+      50.152
+     ],
+     [
+      8.765,
+      50.15
+     ],
+     [
+      8.72,
+      50.128
+     ],
+     [
+      8.69,
+      50.115
+     ]
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,193 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "P1",
+    "name": "P+R-Teststandort 1 (bei S Weißkirchen/Steinbach)",
+    "stellplaetze": 220,
+    "gebuehr_je_parkvorgang_eur": 1.5,
+    "investition_eur": 1900000,
+    "betriebskosten_jahr_eur": 45000,
+    "eroeffnung": "2025-04-01",
+    "vermiedene_pkw_km_je_fahrt": 18,
+    "spitzenauslastung_werktag": 0.88,
+    "achse": "A5",
+    "oev_anbindung": "S-Bahn Weißkirchen/Steinbach",
+    "oev_linien": 1,
+    "oev_takt_min": 15,
+    "sharing_station": "SH3",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.591732,
+       50.176883
+      ],
+      [
+       8.593273,
+       50.176888
+      ],
+      [
+       8.593268,
+       50.177517
+      ],
+      [
+       8.591727,
+       50.177512
+      ],
+      [
+       8.591732,
+       50.176883
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "P2",
+    "name": "P+R-Teststandort 2 (Parkdeck bei S Stadion)",
+    "stellplaetze": 350,
+    "gebuehr_je_parkvorgang_eur": 2.5,
+    "investition_eur": 6300000,
+    "betriebskosten_jahr_eur": 120000,
+    "eroeffnung": "2026-03-01",
+    "vermiedene_pkw_km_je_fahrt": 20,
+    "spitzenauslastung_werktag": 0.65,
+    "achse": "A3",
+    "oev_anbindung": "S-Bahn Frankfurt-Stadion",
+    "oev_linien": 3,
+    "oev_takt_min": 15,
+    "sharing_station": "SH4",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.63708,
+       50.071064
+      ],
+      [
+       8.638259,
+       50.071345
+      ],
+      [
+       8.63792,
+       50.071936
+      ],
+      [
+       8.636741,
+       50.071655
+      ],
+      [
+       8.63708,
+       50.071064
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "P3",
+    "name": "P+R-Teststandort 3 (bei S Wilhelmsbad)",
+    "stellplaetze": 150,
+    "gebuehr_je_parkvorgang_eur": 1.0,
+    "investition_eur": 950000,
+    "betriebskosten_jahr_eur": 28000,
+    "eroeffnung": "2025-10-01",
+    "vermiedene_pkw_km_je_fahrt": 24,
+    "spitzenauslastung_werktag": 0.74,
+    "achse": "A66",
+    "oev_anbindung": "S-Bahn Hanau-Wilhelmsbad",
+    "oev_linien": 2,
+    "oev_takt_min": 30,
+    "sharing_station": "SH5",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.882871,
+       50.13873
+      ],
+      [
+       8.88413,
+       50.138731
+      ],
+      [
+       8.884129,
+       50.13927
+      ],
+      [
+       8.88287,
+       50.139269
+      ],
+      [
+       8.882871,
+       50.13873
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "P4",
+    "name": "P+R-Teststandort 4 (an der A 5, Busanbindung)",
+    "stellplaetze": 90,
+    "gebuehr_je_parkvorgang_eur": 0.0,
+    "investition_eur": 400000,
+    "betriebskosten_jahr_eur": 16000,
+    "eroeffnung": "2026-06-15",
+    "vermiedene_pkw_km_je_fahrt": 10,
+    "spitzenauslastung_werktag": 0.95,
+    "achse": "A5",
+    "oev_anbindung": "Testbuslinien (2 Linien)",
+    "oev_linien": 2,
+    "oev_takt_min": 10,
+    "sharing_station": null,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       8.605512,
+       50.132773
+      ],
+      [
+       8.606492,
+       50.132777
+      ],
+      [
+       8.606488,
+       50.133227
+      ],
+      [
+       8.605508,
+       50.133223
+      ],
+      [
+       8.605512,
+       50.132773
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

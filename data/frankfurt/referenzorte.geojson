@@ -1,0 +1,165 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R01",
+    "name": "Frankfurt (Main) Hauptbahnhof",
+    "art": "Bahnhof",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.6625,
+     50.107
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R02",
+    "name": "Offenbach am Main",
+    "art": "Nachbarstadt",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.7665,
+     50.1006
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R03",
+    "name": "Bad Homburg v. d. Höhe",
+    "art": "Nachbarstadt",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.618,
+     50.2268
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R04",
+    "name": "Hanau",
+    "art": "Nachbarstadt",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.917,
+     50.1328
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R05",
+    "name": "Eschborn",
+    "art": "Nachbarstadt",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.57,
+     50.143
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R06",
+    "name": "Oberursel (Taunus)",
+    "art": "Nachbarstadt",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.577,
+     50.204
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R07",
+    "name": "Neu-Isenburg",
+    "art": "Nachbarstadt",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.696,
+     50.053
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R08",
+    "name": "Frankfurter Kreuz (A 3 / A 5)",
+    "art": "Autobahnkreuz",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.596,
+     50.056
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R09",
+    "name": "Nordwestkreuz Frankfurt (A 5 / A 66)",
+    "art": "Autobahnkreuz",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.594,
+     50.152
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "R10",
+    "name": "Bad Homburger Kreuz (A 5 / A 661)",
+    "art": "Autobahnkreuz",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.64,
+     50.205
+    ]
+   }
+  }
+ ]
+}

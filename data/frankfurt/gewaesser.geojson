@@ -1,0 +1,66 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "main",
+    "name": "Main (vereinfachter Verlauf)",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.5,
+      50.093
+     ],
+     [
+      8.545,
+      50.098
+     ],
+     [
+      8.6,
+      50.095
+     ],
+     [
+      8.645,
+      50.098
+     ],
+     [
+      8.682,
+      50.107
+     ],
+     [
+      8.72,
+      50.108
+     ],
+     [
+      8.745,
+      50.105
+     ],
+     [
+      8.77,
+      50.112
+     ],
+     [
+      8.8,
+      50.115
+     ],
+     [
+      8.83,
+      50.13
+     ],
+     [
+      8.88,
+      50.128
+     ],
+     [
+      8.915,
+      50.125
+     ]
+    ]
+   }
+  }
+ ]
+}

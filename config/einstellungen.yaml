@@ -1,0 +1,262 @@
+# Zentrale Konfiguration „P+R Flächenfinder Rhein-Main“
+# Gewichte, Schwellenwerte, Emissionsfaktor, Verlagerungsanteil, Abschreibungsdauer und Region.
+# Änderungen wirken nach einem Neustart des Servers.
+
+# ============================================================================ Region
+region:
+  aktiv: frankfurt                    # Schlüssel aus "regionen"
+  regionen:
+    frankfurt:
+      label: "Pilotraum Frankfurt am Main"
+      datenverzeichnis: "data/frankfurt"
+      testdaten: true                 # blendet im UI den Hinweis „Testdaten“ ein
+      karte: {mitte: [50.115, 8.680], zoom: 11}
+      # Gemeindeliste mit amtlichem Gemeindeschlüssel (AGS) – dient später zum Filtern
+      # von Pendlerstatistik, Zählstellen und Kataster beim Wechsel auf echte Daten
+      gemeinden:
+        - {name: "Frankfurt am Main", ags: "06412000", rolle: "Pilotstadt"}
+        - {name: "Offenbach am Main", ags: "06413000", rolle: "Referenzort"}
+        - {name: "Bad Homburg v. d. Höhe", ags: "06434001", rolle: "Referenzort"}
+        - {name: "Oberursel (Taunus)", ags: "06434008", rolle: "Referenzort"}
+        - {name: "Hanau", ags: "06435014", rolle: "Referenzort"}
+        - {name: "Eschborn", ags: "06436003", rolle: "Referenzort"}
+        - {name: "Neu-Isenburg", ags: "06438008", rolle: "Referenzort"}
+      kreise: []
+    rhein_main:
+      label: "Metropolregion Frankfurt/Rhein-Main (Erweiterung)"
+      datenverzeichnis: "data/rhein_main"   # noch nicht befüllt; gleiche Layer-Struktur wie data/frankfurt
+      testdaten: false
+      karte: {mitte: [50.10, 8.65], zoom: 9}
+      gemeinden: []                   # alternativ einzelne Gemeinden ergänzen
+      kreise:                         # Erweiterung über Kreisliste: alle Gemeinden dieser Kreise
+        - {name: "Main-Taunus-Kreis", schluessel: "06436"}
+        - {name: "Hochtaunuskreis", schluessel: "06434"}
+        - {name: "Main-Kinzig-Kreis", schluessel: "06435"}
+        - {name: "Kreis Offenbach", schluessel: "06438"}
+        - {name: "Wetteraukreis", schluessel: "06440"}
+        - {name: "Kreis Groß-Gerau", schluessel: "06433"}
+
+# ============================================================================ Flächenfinder
+bewertung:
+  raeumliche_parameter:
+    crs_metrisch: "EPSG:25832"          # ETRS89 / UTM 32N, für Distanzen und Flächen in Metern
+    einzugsradius_achse_m: 3000         # Einpendler einer Achse zählen linear abnehmend bis zu diesem Abstand
+    max_zufahrtsdistanz_m: 1500        # Verkehrsmenge zählt, wenn die Achse (inkl. Zubringer) höchstens so weit entfernt ist
+    oev_radius_m: 800                   # S-Bahn-Stationen im Fußwegradius (ca. 10 Minuten)
+    flaechenbedarf_je_stellplatz_m2: 25 # inkl. Fahrgassen
+    nutzbarer_flaechenanteil: 0.85      # Abzug für Zufahrt, Grün, Nebenanlagen
+
+  ausschluss:
+    # K.-o.-Kriterium: Jede Überlappung mit diesen Gebietstypen schließt die Fläche aus dem Ranking aus.
+    gebietstypen:
+      schutzgebiet: "Schutzgebiet"
+      ueberschwemmungsgebiet: "Überschwemmungsgebiet"
+    mindestueberlappung_anteil: 0.0     # 0.0 = jede Überlappung führt zum Ausschluss
+
+  indikatoren:
+    nachfrage:
+      label: "Nachfragepotenzial"
+      beschreibung: "Einpendler auf den Einfallachsen im Einzugsbereich, linear abnehmend mit dem Abstand zur Achse"
+      komponenten:
+        einpendler_einzugsbereich:
+          label: "Einpendler im Einzugsbereich"
+          einheit: "Personen/Tag"
+          min: 2000
+          max: 30000
+          anteil: 1.0
+    miv:
+      label: "MIV-Bezug"
+      beschreibung: "Verkehrsmenge (DTV) der nächstgelegenen Einfallachse an der Zufahrt"
+      komponenten:
+        dtv_zufahrt:
+          label: "Verkehrsmenge an der Zufahrt"
+          einheit: "Kfz/24 h"
+          min: 20000
+          max: 100000
+          anteil: 1.0
+    oev:
+      label: "ÖV-Umsteigequalität"
+      beschreibung: "Abfahrten je Stunde aller S-Bahn-Stationen im Fußwegradius (Linienanzahl × 60 / Takt)"
+      komponenten:
+        oev_abfahrten_je_stunde:
+          label: "ÖV-Abfahrten im Fußwegradius"
+          einheit: "Abfahrten/h"
+          min: 0
+          max: 12
+          anteil: 1.0
+    erreichbarkeit:
+      label: "Erreichbarkeit Rad/Fuß/Sharing"
+      beschreibung: "Distanz zum nächsten Radweg und zur nächsten Sharing-Station (je näher, desto besser)"
+      komponenten:
+        distanz_radweg_m:
+          label: "Distanz zum Radweg"
+          einheit: "m"
+          min: 0
+          max: 800
+          invertiert: true
+          anteil: 0.5
+        distanz_sharing_m:
+          label: "Distanz zur Sharing-Station"
+          einheit: "m"
+          min: 0
+          max: 3000
+          invertiert: true
+          anteil: 0.5
+    flaeche:
+      label: "Flächenverfügbarkeit und -eignung"
+      beschreibung: "Größe der Fläche und Eigentum (öffentliche Flächen sind schneller verfügbar)"
+      komponenten:
+        flaeche_m2:
+          label: "Flächengröße"
+          einheit: "m²"
+          min: 2000
+          max: 15000
+          anteil: 0.6
+        eigentum:
+          label: "Eigentum"
+          einheit: ""
+          kategorien:
+            öffentlich: 100
+            privat: 30
+          anteil: 0.4
+    kosten:
+      label: "Kosten"
+      beschreibung: "Geschätzte Investition je Stellplatz (je niedriger, desto besser)"
+      komponenten:
+        investition_je_stellplatz_eur:
+          label: "Investition je Stellplatz"
+          einheit: "€"
+          min: 3000
+          max: 25000
+          invertiert: true
+          anteil: 1.0
+    umwelt:
+      label: "Umwelt und Städtebau"
+      beschreibung: "Bereits versiegelte Flächen vermeiden Neuversiegelung; naturnahe Flächen werden geschont"
+      komponenten:
+        versiegelungsgrad_prozent:
+          label: "Versiegelungsgrad (Bestand)"
+          einheit: "%"
+          min: 0
+          max: 100
+          anteil: 0.5
+        naturnaehe_prozent:
+          label: "Naturnähe"
+          einheit: "%"
+          min: 0
+          max: 100
+          invertiert: true
+          anteil: 0.5
+
+  profile:
+    ausgewogen:
+      label: "Ausgewogen"
+      beschreibung: "Standardgewichtung über alle Kriterien"
+      gewichte: {nachfrage: 20, miv: 15, oev: 15, erreichbarkeit: 10, flaeche: 15, kosten: 15, umwelt: 10}
+    klimaschutz:
+      label: "Klimaschutz"
+      beschreibung: "Betont gute ÖV-Anbindung, Rad- und Sharing-Erreichbarkeit sowie Flächenschonung"
+      gewichte: {nachfrage: 20, miv: 10, oev: 25, erreichbarkeit: 15, flaeche: 10, kosten: 5, umwelt: 15}
+    kosten:
+      label: "Kosten"
+      beschreibung: "Betont geringe Investition und schnell verfügbare Flächen"
+      gewichte: {nachfrage: 15, miv: 15, oev: 10, erreichbarkeit: 5, flaeche: 20, kosten: 30, umwelt: 5}
+    stadtvertraeglichkeit:
+      label: "Stadtverträglichkeit"
+      beschreibung: "Betont Umwelt, Städtebau und Erreichbarkeit ohne Auto"
+      gewichte: {nachfrage: 15, miv: 10, oev: 15, erreichbarkeit: 15, flaeche: 10, kosten: 10, umwelt: 25}
+
+  kostenbandbreite:
+    # Faktoren auf die geschätzte Investition je Stellplatz
+    konservativ: 1.30
+    realistisch: 1.00
+    optimistisch: 0.80
+
+  sharing_regeln:
+    # Eine Empfehlung gilt, wenn alle Bedingungen erfüllt sind.
+    # Verfügbare Kennwerte: siehe Steckbrief (Rohwerte, stellplaetze, distanz_zentrum_m).
+    bike_hub:
+      label: "Bike-Hub"
+      nutzen: "Sichere Radabstellanlage mit Bike-Sharing für den Umstieg Rad ↔ ÖV"
+      bedingungen:
+        - {kennwert: distanz_radweg_m, operator: "<=", wert: 300}
+        - {kennwert: oev_abfahrten_je_stunde, operator: ">=", wert: 4}
+    e_scooter_zone:
+      label: "E-Scooter-Zone"
+      nutzen: "Abstellzone für E-Scooter auf der letzten Meile Richtung Zentrum"
+      bedingungen:
+        - {kennwert: distanz_zentrum_m, operator: "<=", wert: 9000}
+        - {kennwert: oev_abfahrten_je_stunde, operator: ">=", wert: 2}
+    carsharing:
+      label: "Carsharing"
+      nutzen: "Carsharing-Stellplätze für Zweitwege und als Ergänzung für Pendelnde ohne eigenes Auto"
+      bedingungen:
+        - {kennwert: stellplaetze, operator: ">=", wert: 150}
+        - {kennwert: einpendler_einzugsbereich, operator: ">=", wert: 10000}
+    e_lastenrad:
+      label: "E-Lastenrad"
+      nutzen: "E-Lastenräder für Einkaufs- und Transportwege in die Innenstadt"
+      bedingungen:
+        - {kennwert: distanz_zentrum_m, operator: "<=", wert: 6000}
+        - {kennwert: distanz_radweg_m, operator: "<=", wert: 400}
+    ladepunkte:
+      label: "Ladepunkte"
+      nutzen: "Ladepunkte für E-Pkw (Richtwert 10 % der Stellplätze)"
+      anteil_stellplaetze: 0.10
+      bedingungen:
+        - {kennwert: stellplaetze, operator: ">=", wert: 80}
+
+# ============================================================================ Live-Monitoring und Wirkung
+monitoring:
+  datenquelle: simulator              # simulator | sensor | parkautomat | gbfs (nur simulator ist implementiert)
+
+  aktualisierung:
+    intervall_s: 5                    # Abstand der Aktualisierungen in echten Sekunden
+    zeitraffer: 1                     # 1 = Echtzeit; 60 = eine echte Sekunde entspricht einer simulierten Minute
+    zeitraffer_optionen: [1, 60, 360, 1440]
+
+  historie:
+    vorlauf_tage: 8                   # beim Start simulierte Vergangenheit (für Wochenansicht)
+    aufbewahrung_tage: 21             # ältere Daten werden aus dem Speicher entfernt
+    bucket_minuten: 5                 # Zeitraster der gespeicherten Messwerte
+    csv_datei: "data/historie/messwerte.csv"  # Ziel für den CSV-Export
+
+  ampel:
+    gruen_bis: 0.70                   # Auslastung unter 70 % = grün
+    gelb_bis: 0.90                    # 70–90 % = gelb, darüber rot
+
+  wirtschaftlichkeit:
+    abschreibungsdauer_jahre: 20
+    kapitalzins: 0.03                 # kalkulatorischer Zinssatz auf das durchschnittlich gebundene Kapital
+    tage_je_jahr: 365                 # Hochrechnung der Tageswerte (Ø der letzten 7 Tage) auf ein Jahr
+
+  wirkung:
+    verlagerungsanteil: 0.30          # Anteil der P+R-Nutzer, die ohne P+R mit dem Pkw ins Zentrum gefahren wären
+    emissionsfaktor_g_je_km: 150      # CO₂-Äquivalente je Pkw-Kilometer (Annahme, Pkw-Bestandsmix)
+    querschnittsfahrten_je_verlagerter_fahrt: 2   # Hin- und Rückweg passieren die Zählstelle
+
+  simulator:
+    zufallssaat: 42
+    schrittweite_min: 5               # interne Rechenschrittweite
+    kurzparker_je_stellplatz_und_stunde: 0.015   # zusätzlicher Umschlag tagsüber (Kurzzeitparken)
+    wochenendfaktor: {samstag: 0.35, sonntag: 0.20}
+    schwankung: 0.06                  # relative Zufallsschwankung der Belegung
+    wetter:
+      # Faktor auf P+R-Belegung und Sharing-Nutzung; Wahrscheinlichkeit für automatische Tageswahl
+      sonnig:   {label: "Sonnig",   pr_faktor: 0.97, sharing_faktor: 1.15, wahrscheinlichkeit: 0.35}
+      bewoelkt: {label: "Bewölkt",  pr_faktor: 1.00, sharing_faktor: 1.00, wahrscheinlichkeit: 0.35}
+      regen:    {label: "Regen",    pr_faktor: 1.08, sharing_faktor: 0.55, wahrscheinlichkeit: 0.25}
+      schnee:   {label: "Schnee",   pr_faktor: 0.92, sharing_faktor: 0.30, wahrscheinlichkeit: 0.15, monate: [12, 1, 2]}
+
+  sharing:
+    # Grundnachfrage (Fahrten je Fahrzeug und Werktag) und mittlere Nutzungsdauer je Fahrt
+    bike:       {label: "Bike-Sharing",  fahrten_je_fahrzeug_tag: 3.0, mittlere_dauer_min: 22}
+    escooter:   {label: "E-Scooter",     fahrten_je_fahrzeug_tag: 4.0, mittlere_dauer_min: 12}
+    carsharing: {label: "Carsharing",    fahrten_je_fahrzeug_tag: 1.4, mittlere_dauer_min: 150}
+    lastenrad:  {label: "E-Lastenrad",   fahrten_je_fahrzeug_tag: 1.0, mittlere_dauer_min: 75}
+
+  wirkungsdaten:
+    # Synthetische Zählreihen für den Vorher-Nachher-Vergleich (nur Werktage)
+    vorher_tage: 60                   # Kalendertage vor Eröffnung
+    max_nachher_tage: 180             # höchstens so viele Kalendertage nach Eröffnung
+    hochlauf_tage: 45                 # Zeitkonstante, bis sich die Nutzung eingespielt hat

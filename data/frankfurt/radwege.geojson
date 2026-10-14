@@ -1,0 +1,137 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "RW1",
+    "name": "Testradroute Mainufer",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.545,
+      50.098
+     ],
+     [
+      8.6,
+      50.095
+     ],
+     [
+      8.645,
+      50.098
+     ],
+     [
+      8.682,
+      50.107
+     ],
+     [
+      8.72,
+      50.108
+     ],
+     [
+      8.745,
+      50.105
+     ],
+     [
+      8.77,
+      50.112
+     ],
+     [
+      8.8,
+      50.115
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "RW2",
+    "name": "Testradroute Nordwest",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.68,
+      50.112
+     ],
+     [
+      8.64,
+      50.14
+     ],
+     [
+      8.605,
+      50.165
+     ],
+     [
+      8.598,
+      50.18
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "RW3",
+    "name": "Testradroute Süd-West",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.662,
+      50.105
+     ],
+     [
+      8.64,
+      50.08
+     ],
+     [
+      8.6,
+      50.065
+     ],
+     [
+      8.56,
+      50.06
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "RW4",
+    "name": "Testradroute Ost",
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      8.69,
+      50.116
+     ],
+     [
+      8.76,
+      50.14
+     ],
+     [
+      8.8,
+      50.152
+     ],
+     [
+      8.88,
+      50.14
+     ]
+    ]
+   }
+  }
+ ]
+}

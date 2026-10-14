@@ -1,0 +1,59 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "S1",
+    "name": "S-Bahn Weißkirchen/Steinbach",
+    "art": "S-Bahn",
+    "linien": 1,
+    "takt_min": 15,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.596,
+     50.176
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "S2",
+    "name": "S-Bahn Frankfurt-Stadion",
+    "art": "S-Bahn",
+    "linien": 3,
+    "takt_min": 15,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.634,
+     50.07
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "S3",
+    "name": "S-Bahn Hanau-Wilhelmsbad",
+    "art": "S-Bahn",
+    "linien": 2,
+    "takt_min": 30,
+    "hinweis": "Testdaten – synthetisch, keine Aussage über reale Grundstücke, Eigentümer oder Planungen"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.88,
+     50.137
+    ]
+   }
+  }
+ ]
+}
