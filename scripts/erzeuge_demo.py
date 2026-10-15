@@ -423,8 +423,9 @@ body:not(.startansicht) .demo-hinweis { margin-bottom: 1rem; border-radius: var(
 """
 
 DEMO_HINWEIS = """<p class="hinweis demo-hinweis" id="demo-hinweis"><strong>Demo-Ansicht</strong> mit am {erzeugt} vorberechneten Testdaten.
-Eingaben gelten nur für diese Sitzung. Die Stadtkarte ist ein synthetischer Test-Auszug (Teststraßen); den echten Auszug
-erzeugt <code>scripts/build_basemap.sh</code>. Dateiexport und Wettervorgabe gibt es nur in der vollständigen Version.</p>"""
+Eingaben gelten nur für diese Sitzung. {karte} Dateiexport und Wettervorgabe gibt es nur in der vollständigen Version.</p>"""
+KARTE_TEST = "Die Stadtkarte ist ein synthetischer Test-Auszug (Teststraßen); den echten Auszug erzeugt der GitHub-Workflow „Basiskarte erzeugen“."
+KARTE_ECHT = "Die Stadtkarte zeigt einen echten Protomaps-Ausschnitt (OpenStreetMap, Build {datum}) für die Frankfurter Innenstadt und Umgebung."
 
 # Basiskarte in der Demo: Test-Auszug und Glyphen eingebettet, MapLibre liest sie aus dem Speicher
 BASISKARTE_JS = r"""
@@ -432,15 +433,15 @@ BASISKARTE_JS = r"""
   const B = JSON.parse(document.getElementById("demo-basiskarte").textContent);
   const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const erlaubt = () => { try { return localStorage.getItem("pr-testdaten-anzeigen") !== "0"; } catch (_) { return true; } };
-  window.PR_DEMO_BASISKARTE_STATUS = (mitTest) => (mitTest && B.pmtiles ? B.status : { ...B.status, vorhanden: false, testdaten: false,
+  window.PR_DEMO_BASISKARTE_STATUS = (mitTest) => ((mitTest || !B.status.testdaten) && B.pmtiles ? B.status : { ...B.status, vorhanden: false, testdaten: false,
     hinweis: "Ohne Testdaten gibt es in der Demo keinen Kartenauszug." });
   window.PR_DEMO_STIL = (name) => {
     const s = JSON.parse(JSON.stringify(B.stile[name]));
-    if (name === "stadt" && (!erlaubt() || !B.pmtiles)) { s.sources = {}; s.layers = s.layers.filter((l) => !l.source); }
+    if (name === "stadt" && ((!erlaubt() && B.status.testdaten) || !B.pmtiles)) { s.sources = {}; s.layers = s.layers.filter((l) => !l.source); }
     return s;
   };
   window.PR_DEMO_PMTILES = (protokoll) => {
-    if (B.pmtiles) protokoll.add(new pmtiles.PMTiles(new pmtiles.FileSource(new File([bytes(B.pmtiles)], "rhein-main-testdaten"))));
+    if (B.pmtiles) protokoll.add(new pmtiles.PMTiles(new pmtiles.FileSource(new File([bytes(B.pmtiles)], "basiskarte-demo"))));
     maplibregl.addProtocol("demoglyphen", async (anfrage) => {
       const m = decodeURIComponent(anfrage.url).match(/^demoglyphen:\/\/([^/]+)\/(\d+-\d+)/);
       const schluessel = m ? `${m[1].split(",")[0]}/${m[2]}` : "";
@@ -455,15 +456,16 @@ def basiskarte_erzeugen() -> dict:
     """Stile (Theme eingesetzt), Test-Auszug und Glyphen für die Demo."""
     import base64
     from app import basiskarte, glyphen
-    pfad, ist_test = basiskarte.aktive_datei(True)
-    if pfad is not None and not ist_test:
-        pfad = WURZEL / basiskarte.einstellungen()["testdatei"]  # echte Auszüge sind zu groß für die Demo
+    e = basiskarte.einstellungen()
+    # Bevorzugt der echte Frankfurt-Ausschnitt (scripts/hole_basemap.py --demo), sonst der synthetische Test-Auszug
+    demo = WURZEL / e["demo"]["datei"]
+    pfad, ist_test = (demo, False) if demo.exists() else (WURZEL / e["testdatei"], True)
     stile = {}
     for name in basiskarte.STILE:
         st = basiskarte.vorlage(name)
         st = basiskarte._aufloesen(st, theme.laden(), {"{attribution}": basiskarte.einstellungen()["attribution"]})
         if "protomaps" in st.get("sources", {}):
-            st["sources"]["protomaps"]["url"] = "pmtiles://rhein-main-testdaten"
+            st["sources"]["protomaps"]["url"] = "pmtiles://basiskarte-demo"
         if "glyphs" in st:
             st["glyphs"] = "demoglyphen://{fontstack}/{range}"
         stile[name] = st
@@ -475,9 +477,16 @@ def basiskarte_erzeugen() -> dict:
             gespeichert = basiskarte.glyphen_verzeichnis() / name / f"{start}-{start + 255}.pbf"
             inhalt = gespeichert.read_bytes() if gespeichert.exists() else (glyphen.bereich(datei, name, start) if datei else glyphen.leerer_bereich(name, start))
             glyphen_b64[f"{name}/{start}-{start + 255}"] = base64.b64encode(inhalt).decode()
-    vorhanden = pfad is not None and pfad.exists()
-    status = basiskarte.status(True) if vorhanden else {"vorhanden": False}
-    status.update(testdaten=True, standardstil="stadt", attribution=basiskarte.einstellungen()["attribution"],
+    vorhanden = pfad.exists()
+    status = {"vorhanden": False}
+    if vorhanden:
+        k = basiskarte.kopf(pfad)
+        meta_datei = pfad.with_suffix(".meta.json")
+        meta = json.loads(meta_datei.read_text(encoding="utf-8")) if meta_datei.exists() else {}
+        status = {"vorhanden": True, "datei": pfad.name, "groesse_mb": round(pfad.stat().st_size / 1e6, 1),
+                  "minzoom": k["minzoom"], "maxzoom": k["maxzoom"], "bbox": k["bbox"],
+                  "build_datum": meta.get("build_datum", ""), "quelle": meta.get("quelle", "synthetischer Test-Auszug" if ist_test else "")}
+    status.update(testdaten=ist_test, standardstil="stadt", attribution=basiskarte.einstellungen()["attribution"],
                   mindestzoom=basiskarte.einstellungen()["mindestzoom"], bestand_symbolgroessen=basiskarte.einstellungen()["bestand_symbolgroessen"])
     return {"status": status, "stile": stile, "glyphen": glyphen_b64,
             "leer": base64.b64encode(glyphen.leerer_bereich("leer", 0)).decode(),
@@ -497,13 +506,16 @@ def html_erzeugen(daten: dict) -> str:
     if logo.exists():
         koerper = koerper.replace('src="/static/logo/traffiq_logo.png"', 'src="data:image/png;base64,' + base64.b64encode(logo.read_bytes()).decode() + '"')
     erzeugt = datetime.fromisoformat(daten["erzeugt"]).strftime("%d.%m.%Y um %H:%M Uhr")
-    koerper = koerper.replace('<main id="inhalt">', '<main id="inhalt">\n    ' + DEMO_HINWEIS.format(erzeugt=erzeugt), 1)
+    basis = basiskarte_erzeugen()
+    st = basis["status"]
+    karte = KARTE_TEST if st.get("testdaten", True) else KARTE_ECHT.format(datum=st.get("build_datum") or "unbekannt")
+    koerper = koerper.replace('<main id="inhalt">', '<main id="inhalt">\n    ' + DEMO_HINWEIS.format(erzeugt=erzeugt, karte=karte), 1)
     leaflet_css = (STATIC / "vendor" / "leaflet" / "leaflet.css").read_text(encoding="utf-8")
     styles = (STATIC / "styles.css").read_text(encoding="utf-8")
     app_js = (STATIC / "app.js").read_text(encoding="utf-8")
     erweiterung_js = (STATIC / "erweiterung.js").read_text(encoding="utf-8")
     maplibre_css = (STATIC / "vendor" / "maplibre" / "maplibre-gl.css").read_text(encoding="utf-8")
-    basis_json = json.dumps(basiskarte_erzeugen(), ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    basis_json = json.dumps(basis, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     cluster_css = "\n".join((STATIC / "vendor" / "markercluster" / n).read_text(encoding="utf-8") for n in ("MarkerCluster.css", "MarkerCluster.Default.css"))
     daten_json = json.dumps(daten, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     return f"""<title>P+R Flächenfinder Rhein-Main</title>

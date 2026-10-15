@@ -43,6 +43,7 @@ def main() -> int:
     try:
         if "--demo" in sys.argv:
             lade(Path(e["demo"]["datei"]).name, WURZEL / e["demo"]["datei"])
+            lade("rhein-main.meta.json", (WURZEL / e["demo"]["datei"]).with_suffix(".meta.json"))
             return 0
         lade("rhein-main.pmtiles", WURZEL / e["datei"])
         lade("rhein-main.meta.json", WURZEL / e["metadatei"])

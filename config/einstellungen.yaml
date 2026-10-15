@@ -429,6 +429,6 @@ basiskarte:
     datei: "data/basemap/frankfurt-demo.pmtiles"
     bbox: [8.55, 50.06, 8.78, 50.18]
     maxzoom: 15
-    max_mb: 13
+    max_mb: 6        # eingebettet in die Demo-Seite (Grenze 16 MB inklusive aller übrigen Daten)
   # Ablage des fertigen Auszugs als GitHub-Release (Workflow .github/workflows/basiskarte.yml)
   release_tag: "basiskarte"

@@ -20,6 +20,8 @@ def main() -> int:
     e = konf.abschnitt("basiskarte")
     d = e["demo"]
     quelle, ziel = WURZEL / e["datei"], WURZEL / d["datei"]
+    if "--quelle" in sys.argv:  # z. B. einen geladenen, noch zu großen Demo-Ausschnitt weiter verkleinern
+        quelle = Path(sys.argv[sys.argv.index("--quelle") + 1]).resolve()
     werkzeug = shutil.which("pmtiles") or shutil.which("go-pmtiles")
     if not werkzeug or not quelle.exists():
         print("FEHLER: pmtiles-Werkzeug oder Auszug fehlt (zuerst scripts/build_basemap.sh)", file=sys.stderr)
