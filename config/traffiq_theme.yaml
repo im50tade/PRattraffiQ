@@ -8,10 +8,10 @@ name: "traffiQ Frankfurt am Main"
 logo:
   text: "traffiQ"
   zusatz: "Frankfurt am Main"
-  datei: "static/logo/traffiq_logo.svg"   # wird angezeigt, sobald die Datei vorhanden ist; bis dahin Textlogo
+  datei: "static/logo/traffiq_logo.png"   # Logo aus dem traffiQ-Briefbogen (transparent, 800 × 304 px); fehlt die Datei, erscheint das Textlogo
 
 schrift:
-  familie: "Arial, Helvetica, sans-serif"  # Platzhalter bis zur Hausschrift
+  familie: "Arial, Helvetica, sans-serif"  # Hausschrift laut traffiQ-Briefbogen: Arial
   groesse_fliesstext_px: 16
   # Kartenlabels: MapLibre braucht die Schrift als Glyphen-Dateien. Sie werden lokal aus der ersten
   # vorhandenen Schriftdatei erzeugt (Arial; sonst das metrisch gleiche Liberation Sans).

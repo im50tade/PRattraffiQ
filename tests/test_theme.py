@@ -96,4 +96,17 @@ def test_theme_css_und_favicon_werden_ausgeliefert():
         assert css.status_code == 200 and "--karte-bestand-pr:" in css.text and "--chart-1:" in css.text and "--focus-ring:" in css.text
         assert c.get("/favicon.svg").headers["content-type"].startswith("image/svg+xml")
         info = c.get("/api/theme").json()
-        assert info["logo"]["text"] == "traffiQ" and info["logo"]["vorhanden"] is False
+        assert info["logo"]["text"] == "traffiQ" and info["logo"]["vorhanden"] is True
+
+
+def test_logo_aus_dem_briefbogen():
+    """Logodatei liegt vor, ist transparent und nutzt nur Theme-Farben (Dunkelblau, Grau, Weiß)."""
+    from PIL import Image
+    pfad = WURZEL / "app" / T["logo"]["datei"]
+    assert pfad.exists()
+    bild = Image.open(pfad).convert("RGBA")
+    deckend = {px[:3] for n, px in bild.getcolors(1 << 24) if px[3] == 255 and n > 500}
+    erlaubt = {theme.rgb(T["basis"]["text"]), theme.rgb(T["akzent"]["grau"]), theme.rgb(T["basis"]["hintergrund"])}
+    nah = lambda a, b: max(abs(x - y) for x, y in zip(a, b)) <= 3  # noqa: E731 – Rundung beim Export
+    assert all(any(nah(f, e) for e in erlaubt) for f in deckend), deckend
+    assert any(px[3] == 0 for _, px in bild.getcolors(1 << 24)), "transparenter Hintergrund"

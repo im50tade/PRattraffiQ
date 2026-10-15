@@ -162,7 +162,7 @@ keine Farbwerte im Code stehen (ausgenommen die eingebundenen Fremdbibliotheken 
 - `map_layers` – Farbe je Kartenebene (Bestands-P+R, Schiene, Bus, Autobahn, Hauptstraße, Radnetz,
   Kandidat, Zwischennutzung, Schutzgebiet, Ausschluss); `status` – Realismus-Status; `ampel` – Auslastung
 - `chart_series` – Reihenfolge der Diagrammfarben, `chart_alert` – Warnschwelle; `focus_ring`
-- `logo` – Text-Logo und Pfad der Logodatei; `schrift` – Schriftfamilie und Fließtextgröße
+- `logo` – Logodatei und Text-Logo als Ersatz; `schrift` – Schriftfamilie und Fließtextgröße
 - Mit `PR_THEME=/pfad/zur/theme.yaml` lässt sich eine andere Theme-Datei laden.
 
 Werte mit dem Kommentar „Vorschlag“ sind aus dem Spektrum abgeleitet und noch abzustimmen.
@@ -170,8 +170,9 @@ Das **Startbild** (Reiter „Karte“) zeigt die Karte bildschirmfüllend, links
 oben die Filter. Voreingestellt sind Bestands-P+R, S-/U-Bahn und Hauptstraßen; höchstens sieben
 Ebenen sind gleichzeitig aktiv.
 
-**Logo:** Solange keine Datei vorliegt, erscheint ein Text-Logo. Eine SVG-Datei unter
-`app/static/logo/traffiq_logo.svg` wird automatisch verwendet.
+**Logo und Hausschrift:** Das Logo stammt aus dem traffiQ-Briefbogen (`app/static/logo/traffiq_logo.png`,
+transparent, in den Theme-Farben Dunkelblau und Grau; Pfad in `logo.datei`). Fehlt die Datei, erscheint ein
+Text-Logo. Hausschrift laut Briefbogen ist **Arial** – für die Oberfläche und für die Kartenlabels.
 
 ### Erweiterung auf die Metropolregion Rhein-Main
 

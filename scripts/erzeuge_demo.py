@@ -491,6 +491,11 @@ def html_erzeugen(daten: dict) -> str:
     koerper = re.sub(r"\s*<script.*?</script>", "", koerper, flags=re.S)
     # Dateiexporte entfernen (Downloads sind in der eingebetteten Ansicht nicht möglich)
     koerper = re.sub(r"\s*<a [^>]*download[^>]*>.*?</a>", "", koerper, flags=re.S)
+    # Logo als data-URI einbetten (die Demo hat keinen Server)
+    import base64
+    logo = WURZEL / "app" / theme.laden()["logo"]["datei"]
+    if logo.exists():
+        koerper = koerper.replace('src="/static/logo/traffiq_logo.png"', 'src="data:image/png;base64,' + base64.b64encode(logo.read_bytes()).decode() + '"')
     erzeugt = datetime.fromisoformat(daten["erzeugt"]).strftime("%d.%m.%Y um %H:%M Uhr")
     koerper = koerper.replace('<main id="inhalt">', '<main id="inhalt">\n    ' + DEMO_HINWEIS.format(erzeugt=erzeugt), 1)
     leaflet_css = (STATIC / "vendor" / "leaflet" / "leaflet.css").read_text(encoding="utf-8")

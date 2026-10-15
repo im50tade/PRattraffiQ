@@ -173,6 +173,7 @@ async function zeigeKarte() {
 async function ladeNetzDaten() {
   $("#netz-status").textContent = "Lade Karten- und Flächendaten …";
   const profil = $("#kand-profil").value || "ausgewogen";
+  const rankingLaden = ladeKandidatenRanking();  // Top 10 parallel zu den Kartendaten, nicht danach
   try {
     const [bestand, strassen, radnetz, halte, linien, kandidaten, schutz] = await Promise.all([
       api(mitTd("/api/bestand")), api(mitTd("/api/netz/strassen")), api(mitTd("/api/netz/radnetz")),
@@ -192,7 +193,7 @@ async function ladeNetzDaten() {
   const leer = !ez.daten.strassen.features.length && !ez.daten.kandidaten.features.length;
   $("#netz-status").textContent = leer ? "Keine Daten vorhanden. Echte Quellen fehlen noch; siehe Reiter „Datenlage“." : "";
   $("#netz-status").hidden = !leer;
-  await Promise.all([ladeKandidatenRanking(), ladeZwischennutzung(), ladeReview()]);
+  await Promise.all([rankingLaden.then(zeichneTop10), ladeZwischennutzung(), ladeReview()]);
 }
 
 function ersetze(name, layer) {
@@ -694,7 +695,7 @@ async function nachReview() {
   const profil = $("#kand-profil").value || "ausgewogen";
   ez.daten.kandidaten = await api(mitTd(`/api/kandidaten/karte?profil=${profil}`));
   zeichneKandidatenKarte();
-  await Promise.all([ladeKandidatenRanking(), ladeZwischennutzung(), ladeReview()]);
+  await Promise.all([rankingLaden.then(zeichneTop10), ladeZwischennutzung(), ladeReview()]);
 }
 
 // ====================================================================== Datenlage
@@ -734,10 +735,9 @@ async function ladeDatenlage() {
 async function ladeLogo() {
   try {
     const t = await api("/api/theme");
-    if (!t.logo.vorhanden) return;
     const bild = $("#logo-bild");
-    bild.addEventListener("load", () => { bild.hidden = false; $("#logo-text").hidden = true; });
-    bild.src = `/${t.logo.datei}`;
+    if (!t.logo.vorhanden) { bild.hidden = true; $("#logo-text").hidden = false; return; }
+    if (!bild.src.endsWith(`/${t.logo.datei}`)) bild.src = `/${t.logo.datei}`;  // Pfad aus traffiq_theme.yaml
   } catch (_) { /* Demo ohne Server oder kein Logo: Textlogo bleibt */ }
 }
 

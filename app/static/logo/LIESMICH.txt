@@ -1,2 +1,3 @@
-Hier die Logodatei traffiq_logo.svg ablegen (Pfad siehe config/traffiq_theme.yaml, logo.datei).
-Bis dahin zeigt die Oberfläche ein Textlogo.
+traffiq_logo.png: Logo aus dem traffiQ-Briefbogen (transparenter Hintergrund, Farben wie in config/traffiq_theme.yaml).
+Pfad siehe config/traffiq_theme.yaml, logo.datei. Eine Vektorfassung (SVG) kann die PNG-Datei später ersetzen.
+Fehlt die Datei, zeigt die Oberfläche ein Textlogo.

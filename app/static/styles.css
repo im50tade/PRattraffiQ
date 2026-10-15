@@ -46,7 +46,8 @@ code { font-family: "Courier New", monospace; }
   background: var(--basis-hintergrund); border-bottom: 1px solid var(--linie);
 }
 .logo { display: inline-flex; align-items: center; text-decoration: none; color: var(--basis-text); flex: none; }
-.logo img { height: 40px; width: auto; }
+.logo img { height: 46px; width: auto; display: block; }
+.logo img[hidden], .logo-text[hidden] { display: none; }
 .logo-text { display: inline-flex; flex-direction: column; line-height: 1.05; }
 .logo-marke { font-weight: 700; font-size: 1.6rem; letter-spacing: -.01em; }
 .logo-zusatz { font-size: .875rem; letter-spacing: .02em; }
