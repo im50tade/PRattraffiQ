@@ -43,11 +43,31 @@ echo "Werkzeug: $PMTILES ($("$PMTILES" version 2>/dev/null | head -1 || echo 'Ve
 
 # ---------------------------------------------------------------- aktuellen Build bestimmen
 if [[ -z "${BUILD:-}" ]]; then
-  BUILD="$("$PYTHON" - "$BUILDS" <<'PY'
+  BUILD="$("$PYTHON" - "$BUILDS" "$QUELLE" <<'PY'
+# Neuester Build: zuerst aus der Build-Liste, sonst die letzten Tage direkt an der Quelle abfragen
 import json, sys, urllib.request
-with urllib.request.urlopen(sys.argv[1], timeout=60) as r:
-    builds = json.load(r)
-print(sorted(b["key"] for b in builds if b["key"].endswith(".pmtiles"))[-1].removesuffix(".pmtiles"))
+from datetime import date, timedelta
+liste, quelle = sys.argv[1], sys.argv[2]
+KOPF = {"User-Agent": "Mozilla/5.0 (P+R Flaechenfinder build_basemap.sh)"}
+def anfrage(url, methode="GET"):
+    return urllib.request.urlopen(urllib.request.Request(url, headers=KOPF, method=methode), timeout=60)
+try:
+    with anfrage(liste) as r:
+        builds = json.load(r)
+    schluessel = [b["key"] if isinstance(b, dict) else str(b) for b in builds]
+    print(sorted(k for k in schluessel if k.endswith(".pmtiles"))[-1].removesuffix(".pmtiles"))
+except Exception as exc:
+    print(f"Build-Liste nicht lesbar ({exc}), suche an der Quelle …", file=sys.stderr)
+    for tage in range(0, 21):
+        tag = (date.today() - timedelta(days=tage)).strftime("%Y%m%d")
+        try:
+            with anfrage(f"{quelle}/{tag}.pmtiles", "HEAD"):
+                print(tag)
+                break
+        except Exception:
+            continue
+    else:
+        sys.exit("FEHLER: kein Protomaps-Build der letzten 21 Tage gefunden")
 PY
 )"
 fi
