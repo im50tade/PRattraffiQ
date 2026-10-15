@@ -52,7 +52,7 @@ basiskarte:
   land: "#f3f4f6"
   wasser: "#99d8f3"
   gruen: "#99d7ce"              # Wald und Parks
-  gruen_deckkraft: 0.45         # nur sehr hell
+  gruen_deckkraft: 0.3          # nur sehr hell
   gebaeude: "#c8cbcd"           # ohne Umrandung
   strasse_gross: "#6f7478"      # Vorschlag: Autobahn und Bundesstraße, dunkler Grauton aus dem Grau abgeleitet
   strasse_klein: "#ffffff"      # Nebenstraßen weiß …

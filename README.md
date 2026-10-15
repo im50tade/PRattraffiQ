@@ -318,6 +318,12 @@ erzeugen“ wählen und **Run workflow** klicken. GitHub erzeugt und prüft den 
 (rund 10 Minuten) und legt ihn als Release „basiskarte“ ab (Download, nicht im Git-Verlauf); dazu einen kleinen
 Frankfurt-Ausschnitt für die Demo. Ein Codespace lädt den Auszug beim Anlegen automatisch
 (`scripts/hole_basemap.py`); lokal geht das auch mit `python scripts/hole_basemap.py`.
+Der Demo-Ausschnitt (`scripts/demo_auszug.py`, Stufen in `basiskarte.demo.stufen`) kombiniert die Region grob,
+Frankfurt genauer und die Innenstadt mit Straßennamen, damit die Demo-Seite unter 16 MB bleibt.
+
+*Straßennamen und Zoomstufen:* Protomaps liefert Namen von Haupt- und Bundesstraßen ab Zoomstufe 13, Namen von
+Wohn- und Nebenstraßen erst ab Zoomstufe 15 (Kachelstufe 14). Bei Zoomstufe 14 sind daher die Hauptstraßen
+beschriftet, ab 15 alle Straßen; der Stil zeigt jeden Namen, sobald die Daten ihn enthalten.
 
 **Test-Auszug:** `python scripts/erzeuge_testbasemap.py` erzeugt aus den Testdaten einen synthetischen
 Auszug im Protomaps-Schema (`data/basemap/rhein-main-testdaten.pmtiles`, rund 2,5 MB, Teststraßen und

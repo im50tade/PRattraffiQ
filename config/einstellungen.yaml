@@ -427,8 +427,12 @@ basiskarte:
   # Kleiner Ausschnitt Frankfurt mit echten Straßen für die Demo-Ansicht (muss unter der Größengrenze bleiben)
   demo:
     datei: "data/basemap/frankfurt-demo.pmtiles"
-    bbox: [8.55, 50.06, 8.78, 50.18]
-    maxzoom: 15
-    max_mb: 6        # eingebettet in die Demo-Seite (Grenze 16 MB inklusive aller übrigen Daten)
+    stufen:                         # ohne bbox = Gebiet der Basiskarte
+      - {minzoom: 0, maxzoom: 8}                                         # ganze Region, grob
+      - {bbox: [8.40, 49.98, 8.95, 50.30], minzoom: 9, maxzoom: 9}          # Umland
+      - {bbox: [8.55, 50.04, 8.80, 50.19], minzoom: 10, maxzoom: 12}        # Frankfurt
+      - {bbox: [8.60, 50.07, 8.75, 50.15], minzoom: 13, maxzoom: 13}        # Kernstadt
+      - {bbox: [8.645, 50.100, 8.690, 50.118], minzoom: 14, maxzoom: 14}    # Hauptbahnhof/Innenstadt mit Straßennamen
+    max_mb: 7.0      # eingebettet in die Demo-Seite (Grenze 16 MB inklusive aller übrigen Daten)
   # Ablage des fertigen Auszugs als GitHub-Release (Workflow .github/workflows/basiskarte.yml)
   release_tag: "basiskarte"

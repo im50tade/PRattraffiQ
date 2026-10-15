@@ -425,7 +425,8 @@ body:not(.startansicht) .demo-hinweis { margin-bottom: 1rem; border-radius: var(
 DEMO_HINWEIS = """<p class="hinweis demo-hinweis" id="demo-hinweis"><strong>Demo-Ansicht</strong> mit am {erzeugt} vorberechneten Testdaten.
 Eingaben gelten nur für diese Sitzung. {karte} Dateiexport und Wettervorgabe gibt es nur in der vollständigen Version.</p>"""
 KARTE_TEST = "Die Stadtkarte ist ein synthetischer Test-Auszug (Teststraßen); den echten Auszug erzeugt der GitHub-Workflow „Basiskarte erzeugen“."
-KARTE_ECHT = "Die Stadtkarte zeigt einen echten Protomaps-Ausschnitt (OpenStreetMap, Build {datum}) für die Frankfurter Innenstadt und Umgebung."
+KARTE_ECHT = ("Die Stadtkarte ist ein echter Protomaps-Ausschnitt (OpenStreetMap, Build {datum}): Region grob, Frankfurt genauer, "
+              "Innenstadt um den Hauptbahnhof mit allen Straßennamen.")
 
 # Basiskarte in der Demo: Test-Auszug und Glyphen eingebettet, MapLibre liest sie aus dem Speicher
 BASISKARTE_JS = r"""
@@ -553,6 +554,8 @@ def main_() -> None:
     ZIEL.parent.mkdir(parents=True, exist_ok=True)
     ZIEL.write_text(html_erzeugen(daten), encoding="utf-8")
     print(f"geschrieben: {ZIEL.relative_to(WURZEL)} ({ZIEL.stat().st_size / 1e6:.1f} MB)")
+    if ZIEL.stat().st_size > 16e6:
+        raise SystemExit("FEHLER: Demo-Seite über 16 MB – basiskarte.demo.stufen verkleinern")
 
 
 if __name__ == "__main__":
