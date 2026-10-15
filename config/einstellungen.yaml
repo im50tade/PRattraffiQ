@@ -424,3 +424,11 @@ basiskarte:
     flaechen: 13
   # Stufen der P+R-Symbolgröße nach Stellplätzen: [ab Stellplätzen, Durchmesser in px]
   bestand_symbolgroessen: [[0, 22], [150, 26], [400, 30], [800, 34]]
+  # Kleiner Ausschnitt Frankfurt mit echten Straßen für die Demo-Ansicht (muss unter der Größengrenze bleiben)
+  demo:
+    datei: "data/basemap/frankfurt-demo.pmtiles"
+    bbox: [8.55, 50.06, 8.78, 50.18]
+    maxzoom: 15
+    max_mb: 13
+  # Ablage des fertigen Auszugs als GitHub-Release (Workflow .github/workflows/basiskarte.yml)
+  release_tag: "basiskarte"

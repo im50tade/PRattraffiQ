@@ -1,0 +1,51 @@
+# Erzeugt den Kartenauszug auf den Servern von GitHub – ohne lokales Terminal.
+# Start: Reiter „Actions“ → „Basiskarte erzeugen“ → „Run workflow“.
+# Ergebnis: Release „basiskarte“ mit rhein-main.pmtiles, rhein-main.meta.json und frankfurt-demo.pmtiles.
+# Die Dateien liegen als Download am Release, nicht im Git-Verlauf.
+name: Basiskarte erzeugen
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: "Protomaps-Build (Datum JJJJMMTT); leer = neuester"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  auszug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Abhängigkeiten
+        run: |
+          pip install -r requirements.txt
+          go install github.com/protomaps/go-pmtiles@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Auszug Metropolregion (Zoom 0–15) erzeugen und prüfen
+        env:
+          BUILD: ${{ inputs.build }}
+        run: scripts/build_basemap.sh
+      - name: Frankfurt-Ausschnitt für die Demo
+        run: python scripts/demo_auszug.py
+      - name: Als Release „basiskarte“ ablegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(python -c "from app import konfiguration as k; print(k.abschnitt('basiskarte')['release_tag'])")
+          NOTIZ=$(python -m app.basiskarte notiz)
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Basiskarte (Protomaps-Auszug)" --notes "$NOTIZ" --latest=false
+          gh release upload "$TAG" data/basemap/rhein-main.pmtiles data/basemap/rhein-main.meta.json data/basemap/frankfurt-demo.pmtiles --clobber
+          gh release edit "$TAG" --notes "$NOTIZ"
+          echo "$NOTIZ" >> "$GITHUB_STEP_SUMMARY"

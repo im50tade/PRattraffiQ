@@ -215,6 +215,16 @@ def hauptprogramm(argv: list[str]) -> int:
         k = kopf(pfad)
         print(f"OK: {pfad} – Zoom {k['minzoom']}–{k['maxzoom']}, Gebiet {k['bbox']}, {k['kacheln']} Kacheln")
         return 0
+    if len(argv) >= 1 and argv[0] == "notiz":  # Text für das GitHub-Release
+        s = status(False)
+        if not s["vorhanden"]:
+            print("Kein Auszug vorhanden.")
+            return 1
+        print(f"Protomaps-Auszug Metropolregion Rhein-Main\n\n- Build-Datum: {s['build_datum']}\n- Quelle: {s['quelle']}\n"
+              f"- Gebiet (W, S, O, N): {s['bbox']}\n- Zoomstufen: {s['minzoom']}–{s['maxzoom']}\n- Größe: {s['groesse_mb']} MB\n"
+              f"- Lizenz: {s['attribution']}\n\nDateien: rhein-main.pmtiles (nach data/basemap/), rhein-main.meta.json, "
+              "frankfurt-demo.pmtiles (Ausschnitt für die Demo).")
+        return 0
     if len(argv) >= 1 and argv[0] == "status":
         print(json.dumps(status(), ensure_ascii=False, indent=2))
         return 0

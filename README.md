@@ -313,6 +313,12 @@ und schreibt Build-Datum und Quelle nach `data/basemap/rhein-main.meta.json`. Di
 Datenlage-Bericht unter „Metadaten“. Der Auszug liegt in `data/basemap/` und ist nicht im Git-Repository.
 Ohne Auszug zeigt die Oberfläche die schematische Karte und einen Hinweis.
 
+**Ohne Terminal (GitHub):** Im Repository auf GitHub den Reiter **Actions** öffnen, links „Basiskarte
+erzeugen“ wählen und **Run workflow** klicken. GitHub erzeugt und prüft den Auszug auf seinen Servern
+(rund 10 Minuten) und legt ihn als Release „basiskarte“ ab (Download, nicht im Git-Verlauf); dazu einen kleinen
+Frankfurt-Ausschnitt für die Demo. Ein Codespace lädt den Auszug beim Anlegen automatisch
+(`scripts/hole_basemap.py`); lokal geht das auch mit `python scripts/hole_basemap.py`.
+
 **Test-Auszug:** `python scripts/erzeuge_testbasemap.py` erzeugt aus den Testdaten einen synthetischen
 Auszug im Protomaps-Schema (`data/basemap/rhein-main-testdaten.pmtiles`, rund 2,5 MB, Teststraßen und
 Testgebäude). Er wird nur verwendet, wenn der echte Auszug fehlt und Testdaten angezeigt werden, und ist im
